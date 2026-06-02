@@ -238,80 +238,147 @@
         <article role="main" id="furo-main-content">
           <section id="architecture">
 <h1>Architecture<a class="headerlink" href="#architecture" title="Link to this heading">¶</a></h1>
-<p>JiuwenClaw uses a split-process architecture: AgentServer handles LLM
-processing while Gateway handles channel communication.</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Browser                    Gateway                    AgentServer
-   │                          │                          │
-   │── WebSocket ────────────►│                          │
-   │   ws://127.0.0.1:19000   │                          │
-   │                          │── WebSocket ────────────►│
-   │                          │   ws://127.0.0.1:18092   │
-   │                          │                          │
-   │                          │   chat.send(&quot;Hello&quot;)     │
-   │                          │─────────────────────────►│
-   │                          │                          │── Agent.chat()
-   │                          │                          │── LLM call
-   │                          │◄── chat.final ───────────│
-   │◄── chat.final ──────────│                          │
-   │◄── res(ok) ────────────│                          │
-</pre></div>
-</div>
-<section id="agentserver-port-18092">
-<h2>AgentServer (Port 18092)<a class="headerlink" href="#agentserver-port-18092" title="Link to this heading">¶</a></h2>
-<p>The AgentServer wraps the Agent runtime in a WebSocket server. It accepts
-connections from the Gateway, processes chat requests, and returns
-responses.</p>
-<p>Start it standalone:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>jiuwenclaw.app_agentserver
-</pre></div>
-</div>
-<p>Or with environment variables:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">AGENT_SERVER_PORT</span><span class="o">=</span><span class="m">9090</span><span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>jiuwenclaw.app_agentserver
+<p>JiuwenClaw runs as two processes communicating over WebSocket.</p>
+<section id="the-two-processes">
+<h2>The Two Processes<a class="headerlink" href="#the-two-processes" title="Link to this heading">¶</a></h2>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Terminal 1                           Terminal 2
+┌──────────────────────────┐        ┌──────────────────────────┐
+│  Agent Process           │        │  Gateway Process         │
+│                          │        │                          │
+│  app_agentserver.py      │        │  WebChannel              │
+│    ↓                     │        │  (channel/web_channel.py)│
+│  AgentWebSocketServer    │◄───────│    ↓                     │
+│  (agentserver/           │  WS   │  AgentClient             │
+│   agent_ws_server.py)    │ 18092 │  (gateway/agent_client.py│
+│    ↓                     │        │    ↓                     │
+│  Agent                   │        │  connect() to 18092     │
+│  (agentserver/agent.py)  │        │                          │
+│    ↓                     │        │  Browser connects to     │
+│  LLM (openjiuwen)        │        │  ws://127.0.0.1:19000   │
+└──────────────────────────┘        └──────────────────────────┘
+
+Agent Process:                     Gateway Process:
+• 启动 WS 服务端 (端口 18092)        • 启动 WS 客户端 → 连 AgentServer
+• 等待 Gateway 连接                  • 启动 WS 服务端 (端口 19000) → 等浏览器连接
+• 收到请求 → Agent.chat() → LLM     • 收到浏览器请求 → AgentClient.chat() → 发给 AgentServer
 </pre></div>
 </div>
 </section>
-<section id="gateway-port-19000">
-<h2>Gateway (Port 19000)<a class="headerlink" href="#gateway-port-19000" title="Link to this heading">¶</a></h2>
-<p>The Gateway runs the WebChannel (browser WebSocket server) and connects
-to AgentServer via <code class="docutils literal notranslate"><span class="pre">AgentClient</span></code>. It translates browser messages to
-AgentServer requests.</p>
-<p>Start both together:</p>
+<section id="agent-process-app-agentserver-py">
+<h2>Agent Process — <code class="docutils literal notranslate"><span class="pre">app_agentserver.py</span></code><a class="headerlink" href="#agent-process-app-agentserver-py" title="Link to this heading">¶</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># app_agentserver.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jiuwenclaw.agentserver.agent_ws_server</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentWebSocketServer</span>
+
+<span class="n">server</span> <span class="o">=</span> <span class="n">AgentWebSocketServer</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">18092</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">server</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>  <span class="c1"># 开始监听，等待 Gateway 连接</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">AgentWebSocketServer</span></code> (<code class="docutils literal notranslate"><span class="pre">agentserver/agent_ws_server.py</span></code>) 是一个
+<strong>WS 服务端</strong>。它做的事：</p>
+<ol class="arabic simple">
+<li><p>监听 18092 端口，接受 Gateway 的 WebSocket 连接</p></li>
+<li><p>收到 <code class="docutils literal notranslate"><span class="pre">chat.send</span></code> → 调 <code class="docutils literal notranslate"><span class="pre">Agent.chat(query)</span></code></p></li>
+<li><p>把结果发回 Gateway</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># agentserver/agent_ws_server.py (简化)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_on_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">websocket</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+    <span class="n">msg</span> <span class="o">=</span> <span class="n">Message</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>                        <span class="c1"># JSON → Message</span>
+    <span class="n">answer</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_agent</span><span class="o">.</span><span class="n">chat</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;query&quot;</span><span class="p">])</span> <span class="c1"># 调 Agent</span>
+    <span class="k">await</span> <span class="n">websocket</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">chat_final_event</span><span class="p">)</span>              <span class="c1"># 发 chat.final</span>
+    <span class="k">await</span> <span class="n">websocket</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>                      <span class="c1"># 发 res(ok)</span>
+</pre></div>
+</div>
+</section>
+<section id="gateway-webchannel-agentclient">
+<h2>Gateway — WebChannel + AgentClient<a class="headerlink" href="#gateway-webchannel-agentclient" title="Link to this heading">¶</a></h2>
+<p>Gateway 有两个 WS 角色：</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>浏览器 ──WS──► WebChannel (服务端, 19000) ──► AgentClient (客户端) ──WS──► AgentServer (18092)
+</pre></div>
+</div>
+<p><strong>WebChannel</strong> (<code class="docutils literal notranslate"><span class="pre">channel/web_channel.py</span></code>) — WS <strong>服务端</strong>，等浏览器连。</p>
+<p><strong>AgentClient</strong> (<code class="docutils literal notranslate"><span class="pre">gateway/agent_client.py</span></code>) — WS <strong>客户端</strong>，主动连 AgentServer。</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># channel/web_channel.py (简化)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">WebChannel</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_agent</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>         <span class="c1"># AgentClient 连 AgentServer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_server</span> <span class="o">=</span> <span class="k">await</span> <span class="n">serve</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>      <span class="c1"># 启动 WS 服务端等浏览器</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_handle_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">websocket</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">Message</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+        <span class="n">answer</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_agent</span><span class="o">.</span><span class="n">chat</span><span class="p">(</span>     <span class="c1"># AgentClient 把请求转发给 AgentServer</span>
+            <span class="n">msg</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;query&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="k">await</span> <span class="n">websocket</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">chat_final</span><span class="p">)</span>     <span class="c1"># 把 Agent 的回复发给浏览器</span>
+        <span class="k">await</span> <span class="n">websocket</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># gateway/agent_client.py (简化)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">AgentClient</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ws</span> <span class="o">=</span> <span class="k">await</span> <span class="n">connect</span><span class="p">(</span><span class="s2">&quot;ws://127.0.0.1:18092&quot;</span><span class="p">)</span>  <span class="c1"># 连 AgentServer</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">chat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">):</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ws</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">chat_send_message</span><span class="p">)</span>            <span class="c1"># 发请求</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ws</span><span class="o">.</span><span class="n">recv</span><span class="p">()</span>                  <span class="c1"># 收回复</span>
+        <span class="k">return</span> <span class="n">response</span>
+</pre></div>
+</div>
+</section>
+<section id="id1">
+<h2>启动<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h2>
+<p>两个终端分别启动：</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 终端 1: Agent</span>
+python<span class="w"> </span>-m<span class="w"> </span>jiuwenclaw.app_agentserver
+
+<span class="c1"># 终端 2: Gateway (WebChannel + AgentClient)</span>
+python<span class="w"> </span>02start_webchannel.py
+</pre></div>
+</div>
+<p>或者一键启动两个子进程：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>jiuwenclaw.app
 </pre></div>
 </div>
 </section>
-<section id="why-split">
-<h2>Why Split?<a class="headerlink" href="#why-split" title="Link to this heading">¶</a></h2>
-<ol class="arabic simple">
-<li><p><strong>Independent scaling</strong> — AgentServer (LLM-heavy) and Gateway
-(IO-heavy) can run on different machines.</p></li>
-<li><p><strong>Independent restarts</strong> — Restart Gateway for channel config changes
-without killing active agent sessions.</p></li>
-<li><p><strong>Clear boundaries</strong> — Each process has one responsibility.</p></li>
-</ol>
-</section>
-<section id="message-flow">
-<h2>Message Flow<a class="headerlink" href="#message-flow" title="Link to this heading">¶</a></h2>
-<p>Every interaction uses the Message schema:</p>
-<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="c1">// Browser → Gateway</span>
-<span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;req&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;chat.send&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;query&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hello&quot;</span><span class="p">}}</span>
-
-<span class="c1">// Gateway → AgentServer (same format, forwarded)</span>
-<span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;req&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;chat.send&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;query&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hello&quot;</span><span class="p">}}</span>
-
-<span class="c1">// AgentServer → Gateway (streaming event)</span>
-<span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;event&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;event&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;chat.final&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;payload&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">}}</span>
-
-<span class="c1">// AgentServer → Gateway (acknowledgment)</span>
-<span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;res&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;ok&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">}</span>
-</pre></div>
+<section id="id2">
+<h2>文件角色总览<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h2>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>文件</p></th>
+<th class="head"><p>进程侧</p></th>
+<th class="head"><p>角色</p></th>
+<th class="head"><p>端口</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>agent_ws_server.py</p></td>
+<td><p>Agent</p></td>
+<td><p>WS <strong>服务端</strong></p></td>
+<td><p>18092</p></td>
+</tr>
+<tr class="row-odd"><td><p>agent_client.py</p></td>
+<td><p>Gateway</p></td>
+<td><p>WS <strong>客户端</strong></p></td>
+<td><p>连 18092</p></td>
+</tr>
+<tr class="row-even"><td><p>web_channel.py</p></td>
+<td><p>Gateway</p></td>
+<td><p>WS <strong>服务端</strong></p></td>
+<td><p>19000</p></td>
+</tr>
+<tr class="row-odd"><td><p>agent.py</p></td>
+<td><p>Agent</p></td>
+<td><p>LLM 调用</p></td>
+<td><p>无</p></td>
+</tr>
+<tr class="row-even"><td><p>message.py</p></td>
+<td><p>共用</p></td>
+<td><p>Message 消息格式</p></td>
+<td><p>无</p></td>
+</tr>
+</tbody>
+</table>
 </div>
-</section>
-<section id="next-steps">
-<h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading">¶</a></h2>
-<ul class="simple">
-<li><p><a class="reference internal" href="first-chat.html"><span class="doc">Your First Chat</span></a> to send messages.</p></li>
-</ul>
 </section>
 </section>
 
@@ -363,11 +430,11 @@ without killing active agent sessions.</p></li>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Architecture</a><ul>
-<li><a class="reference internal" href="#agentserver-port-18092">AgentServer (Port 18092)</a></li>
-<li><a class="reference internal" href="#gateway-port-19000">Gateway (Port 19000)</a></li>
-<li><a class="reference internal" href="#why-split">Why Split?</a></li>
-<li><a class="reference internal" href="#message-flow">Message Flow</a></li>
-<li><a class="reference internal" href="#next-steps">Next Steps</a></li>
+<li><a class="reference internal" href="#the-two-processes">The Two Processes</a></li>
+<li><a class="reference internal" href="#agent-process-app-agentserver-py">Agent Process — <code class="docutils literal notranslate"><span class="pre">app_agentserver.py</span></code></a></li>
+<li><a class="reference internal" href="#gateway-webchannel-agentclient">Gateway — WebChannel + AgentClient</a></li>
+<li><a class="reference internal" href="#id1">启动</a></li>
+<li><a class="reference internal" href="#id2">文件角色总览</a></li>
 </ul>
 </li>
 </ul>

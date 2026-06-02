@@ -1,87 +1,130 @@
 Architecture
 ============
 
-JiuwenClaw uses a split-process architecture: AgentServer handles LLM
-processing while Gateway handles channel communication.
+JiuwenClaw runs as two processes communicating over WebSocket.
+
+The Two Processes
+-----------------
 
 .. code-block:: text
 
-   Browser                    Gateway                    AgentServer
-      │                          │                          │
-      │── WebSocket ────────────►│                          │
-      │   ws://127.0.0.1:19000   │                          │
-      │                          │── WebSocket ────────────►│
-      │                          │   ws://127.0.0.1:18092   │
-      │                          │                          │
-      │                          │   chat.send("Hello")     │
-      │                          │─────────────────────────►│
-      │                          │                          │── Agent.chat()
-      │                          │                          │── LLM call
-      │                          │◄── chat.final ───────────│
-      │◄── chat.final ──────────│                          │
-      │◄── res(ok) ────────────│                          │
+   Terminal 1                           Terminal 2
+   ┌──────────────────────────┐        ┌──────────────────────────┐
+   │  Agent Process           │        │  Gateway Process         │
+   │                          │        │                          │
+   │  app_agentserver.py      │        │  WebChannel              │
+   │    ↓                     │        │  (channel/web_channel.py)│
+   │  AgentWebSocketServer    │◄───────│    ↓                     │
+   │  (agentserver/           │  WS   │  AgentClient             │
+   │   agent_ws_server.py)    │ 18092 │  (gateway/agent_client.py│
+   │    ↓                     │        │    ↓                     │
+   │  Agent                   │        │  connect() to 18092     │
+   │  (agentserver/agent.py)  │        │                          │
+   │    ↓                     │        │  Browser connects to     │
+   │  LLM (openjiuwen)        │        │  ws://127.0.0.1:19000   │
+   └──────────────────────────┘        └──────────────────────────┘
 
-AgentServer (Port 18092)
--------------------------
+   Agent Process:                     Gateway Process:
+   • 启动 WS 服务端 (端口 18092)        • 启动 WS 客户端 → 连 AgentServer
+   • 等待 Gateway 连接                  • 启动 WS 服务端 (端口 19000) → 等浏览器连接
+   • 收到请求 → Agent.chat() → LLM     • 收到浏览器请求 → AgentClient.chat() → 发给 AgentServer
 
-The AgentServer wraps the Agent runtime in a WebSocket server. It accepts
-connections from the Gateway, processes chat requests, and returns
-responses.
+Agent Process — ``app_agentserver.py``
+---------------------------------------
 
-Start it standalone:
+.. code-block:: python
+
+   # app_agentserver.py
+   from jiuwenclaw.agentserver.agent_ws_server import AgentWebSocketServer
+
+   server = AgentWebSocketServer(host="127.0.0.1", port=18092)
+   await server.start()  # 开始监听，等待 Gateway 连接
+
+``AgentWebSocketServer`` (``agentserver/agent_ws_server.py``) 是一个
+**WS 服务端**。它做的事：
+
+1. 监听 18092 端口，接受 Gateway 的 WebSocket 连接
+2. 收到 ``chat.send`` → 调 ``Agent.chat(query)``
+3. 把结果发回 Gateway
+
+.. code-block:: python
+
+   # agentserver/agent_ws_server.py (简化)
+   async def _on_message(self, websocket, raw):
+       msg = Message.from_json(raw)                        # JSON → Message
+       answer = await self._agent.chat(msg.params["query"]) # 调 Agent
+       await websocket.send(chat_final_event)              # 发 chat.final
+       await websocket.send(response)                      # 发 res(ok)
+
+Gateway — WebChannel + AgentClient
+-----------------------------------
+
+Gateway 有两个 WS 角色：
+
+.. code-block:: text
+
+   浏览器 ──WS──► WebChannel (服务端, 19000) ──► AgentClient (客户端) ──WS──► AgentServer (18092)
+
+**WebChannel** (``channel/web_channel.py``) — WS **服务端**，等浏览器连。
+
+**AgentClient** (``gateway/agent_client.py``) — WS **客户端**，主动连 AgentServer。
+
+.. code-block:: python
+
+   # channel/web_channel.py (简化)
+   class WebChannel:
+       async def start(self):
+           await self._agent.connect()         # AgentClient 连 AgentServer
+           self._server = await serve(...)      # 启动 WS 服务端等浏览器
+
+       async def _handle_message(self, websocket, raw):
+           msg = Message.from_json(raw)
+           answer = await self._agent.chat(     # AgentClient 把请求转发给 AgentServer
+               msg.params["query"]
+           )
+           await websocket.send(chat_final)     # 把 Agent 的回复发给浏览器
+           await websocket.send(response)
+
+.. code-block:: python
+
+   # gateway/agent_client.py (简化)
+   class AgentClient:
+       async def connect(self):
+           self._ws = await connect("ws://127.0.0.1:18092")  # 连 AgentServer
+
+       async def chat(self, query):
+           await self._ws.send(chat_send_message)            # 发请求
+           response = await self._ws.recv()                  # 收回复
+           return response
+
+启动
+----
+
+两个终端分别启动：
 
 .. code-block:: bash
 
+   # 终端 1: Agent
    python -m jiuwenclaw.app_agentserver
 
-Or with environment variables:
+   # 终端 2: Gateway (WebChannel + AgentClient)
+   python 02start_webchannel.py
 
-.. code-block:: bash
-
-   AGENT_SERVER_PORT=9090 python -m jiuwenclaw.app_agentserver
-
-Gateway (Port 19000)
----------------------
-
-The Gateway runs the WebChannel (browser WebSocket server) and connects
-to AgentServer via ``AgentClient``. It translates browser messages to
-AgentServer requests.
-
-Start both together:
+或者一键启动两个子进程：
 
 .. code-block:: bash
 
    python -m jiuwenclaw.app
 
-Why Split?
-----------
-
-1. **Independent scaling** — AgentServer (LLM-heavy) and Gateway
-   (IO-heavy) can run on different machines.
-2. **Independent restarts** — Restart Gateway for channel config changes
-   without killing active agent sessions.
-3. **Clear boundaries** — Each process has one responsibility.
-
-Message Flow
+文件角色总览
 -------------
 
-Every interaction uses the Message schema:
-
-.. code-block:: json
-
-   // Browser → Gateway
-   {"type": "req", "method": "chat.send", "params": {"query": "Hello"}}
-
-   // Gateway → AgentServer (same format, forwarded)
-   {"type": "req", "method": "chat.send", "params": {"query": "Hello"}}
-
-   // AgentServer → Gateway (streaming event)
-   {"type": "event", "event": "chat.final", "payload": {"content": "..."}}
-
-   // AgentServer → Gateway (acknowledgment)
-   {"type": "res", "id": "...", "ok": true}
-
-Next Steps
-----------
-
-- :doc:`/jiuwenclaw/tutorials/first-chat` to send messages.
+===================== ========== ======================== ===========
+文件                   进程侧     角色                      端口
+===================== ========== ======================== ===========
+agent_ws_server.py    Agent      WS **服务端**              18092
+agent_client.py       Gateway    WS **客户端**              连 18092
+web_channel.py        Gateway    WS **服务端**              19000
+agent.py              Agent      LLM 调用                   无
+message.py            共用       Message 消息格式            无
+===================== ========== ======================== ===========
