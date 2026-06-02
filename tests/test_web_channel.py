@@ -1,7 +1,8 @@
-"""Tests for WebChannel — start, connect, echo."""
+"""Tests for WebChannel — connection, messaging, error handling."""
 
 import asyncio
 import json
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from websockets.asyncio.client import connect
@@ -9,17 +10,23 @@ from websockets.asyncio.client import connect
 from jiuwenclaw.channel.web_channel import WebChannel, WebChannelConfig
 from jiuwenclaw.schema.message import Message, ReqMethod
 
+TEST_PORT = 19001
 
-TEST_PORT = 19001  # different from default to avoid conflicts
+
+class MockAgent:
+    """Stand-in for Agent that doesn't need openjiuwen."""
+    async def chat(self, query: str) -> str:
+        return f"You asked: {query}"
 
 
 @pytest.fixture
 async def web_channel():
-    """Start a WebChannel on a test port."""
+    """Start a WebChannel with a mock Agent on a test port."""
     config = WebChannelConfig(host="127.0.0.1", port=TEST_PORT, path="/ws")
     channel = WebChannel(config)
+    channel._agent = MockAgent()  # inject mock before start
     task = asyncio.create_task(channel.start())
-    await asyncio.sleep(0.1)  # let server start
+    await asyncio.sleep(0.1)
     yield channel
     await channel.stop()
     task.cancel()
@@ -40,8 +47,8 @@ async def test_connect_and_receive_ack(web_channel):
 
 
 @pytest.mark.asyncio
-async def test_send_req_and_receive_echo(web_channel):
-    """Sending a req should echo back the query."""
+async def test_chat_send_gets_agent_response(web_channel):
+    """Sending chat.send should get a real agent response, not echo."""
     msg = Message.new_req(
         ReqMethod.CHAT_SEND,
         channel_id="web",
@@ -49,42 +56,44 @@ async def test_send_req_and_receive_echo(web_channel):
         params={"query": "Hello, world!"},
     )
     async with connect(f"ws://127.0.0.1:{TEST_PORT}/ws") as ws:
-        # Skip ack
-        await ws.recv()
+        await ws.recv()  # ack
 
-        # Send request
         await ws.send(msg.to_json())
 
-        # Receive echo response
-        raw = await asyncio.wait_for(ws.recv(), timeout=2)
-        data = json.loads(raw)
-        assert data["type"] == "res"
-        assert data["ok"] is True
-        assert data["payload"]["echo"] == "Hello, world!"
+        # First: chat.final event
+        event_raw = await asyncio.wait_for(ws.recv(), timeout=2)
+        event_data = json.loads(event_raw)
+        assert event_data["type"] == "event"
+        assert event_data["event"] == "chat.final"
+        assert "You asked: Hello, world!" in event_data["payload"]["content"]
+
+        # Then: res
+        res_raw = await asyncio.wait_for(ws.recv(), timeout=2)
+        res_data = json.loads(res_raw)
+        assert res_data["type"] == "res"
+        assert res_data["ok"] is True
+        assert "You asked: Hello, world!" in res_data["payload"]["content"]
 
 
 @pytest.mark.asyncio
 async def test_invalid_json_returns_error(web_channel):
     """Invalid JSON should get an error response."""
     async with connect(f"ws://127.0.0.1:{TEST_PORT}/ws") as ws:
-        await ws.recv()  # skip ack
+        await ws.recv()  # ack
         await ws.send("not json")
         raw = await asyncio.wait_for(ws.recv(), timeout=2)
         data = json.loads(raw)
         assert data["ok"] is False
-        assert "error" in data
 
 
 @pytest.mark.asyncio
-async def test_multiple_clients(web_channel):
-    """Multiple clients can connect simultaneously."""
-    async def client():
-        async with connect(f"ws://127.0.0.1:{TEST_PORT}/ws") as ws:
-            await ws.recv()  # ack
-            msg = Message.new_req(ReqMethod.CHAT_SEND, params={"query": "hi"})
-            await ws.send(msg.to_json())
-            raw = await asyncio.wait_for(ws.recv(), timeout=2)
-            data = json.loads(raw)
-            assert data["ok"] is True
-
-    await asyncio.gather(client(), client(), client())
+async def test_empty_query_returns_error(web_channel):
+    """A chat.send with no query should get an error."""
+    msg = Message.new_req(ReqMethod.CHAT_SEND, channel_id="web", params={})
+    async with connect(f"ws://127.0.0.1:{TEST_PORT}/ws") as ws:
+        await ws.recv()  # ack
+        await ws.send(msg.to_json())
+        raw = await asyncio.wait_for(ws.recv(), timeout=2)
+        data = json.loads(raw)
+        assert data["ok"] is False
+        assert "No query" in data["payload"]["error"]

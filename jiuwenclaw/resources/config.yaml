@@ -11,9 +11,9 @@ channels:
 models:
   default:
     model_client_config:
-      api_base: ${API_BASE}
-      api_key: ${API_KEY}
-      model_name: ${MODEL_NAME}
+      api_base: https://dashscope.aliyuncs.com/compatible-mode/v1
+      api_key: sk-0e4cf290ecfa4136951cc9c94df744ae
+      model_name: glm-5.1
       client_provider: ${MODEL_PROVIDER:-openai}
       timeout: 1800
       max_retries: 1

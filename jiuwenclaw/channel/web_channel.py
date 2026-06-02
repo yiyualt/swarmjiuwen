@@ -13,6 +13,7 @@ from typing import Any
 
 from jiuwenclaw.channel.base import ChannelBase
 from jiuwenclaw.schema.message import EventType, Message
+from jiuwenclaw.agentserver.agent import Agent
 
 _logger = logging.getLogger(__name__)
 
@@ -49,6 +50,13 @@ class WebChannel(ChannelBase):
         self.config = config or WebChannelConfig()
         self._server: Any = None
         self._clients: set[Any] = set()
+        self._agent: Agent | None = None
+
+    @property
+    def agent(self) -> Agent:
+        if self._agent is None:
+            self._agent = Agent()
+        return self._agent
 
     async def start(self) -> None:
         """Start the WebSocket server."""
@@ -122,7 +130,31 @@ class WebChannel(ChannelBase):
 
         _logger.debug("[WebChannel] received: type=%s method=%s", msg.type, msg.req_method)
 
-        # Echo: send back the query as a response (no agent yet)
+        if msg.type != "req" or msg.req_method is None:
+            return
+
         query = msg.params.get("query", msg.params.get("content", ""))
-        res = Message.new_res(msg, ok=True, payload={"echo": query})
-        await websocket.send(res.to_json())
+        if not query:
+            res = Message.new_res(msg, ok=False, error="No query provided")
+            await websocket.send(res.to_json())
+            return
+
+        try:
+            answer = await self.agent.chat(query)
+
+            # Send final event
+            final = Message.new_event(
+                EventType.CHAT_FINAL,
+                channel_id=self.channel_id,
+                session_id=msg.session_id,
+                payload={"content": answer},
+            )
+            await websocket.send(final.to_json())
+
+            # Send response
+            res = Message.new_res(msg, ok=True, payload={"content": answer})
+            await websocket.send(res.to_json())
+        except Exception as e:
+            _logger.exception("[WebChannel] agent call failed")
+            res = Message.new_res(msg, ok=False, error=str(e))
+            await websocket.send(res.to_json())

@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Configuring JiuwenClaw" href="configuring-models.html"><link rel="prev" title="Getting Started with Messages" href="getting-started.html">
+<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="prev" title="Configuring JiuwenClaw" href="configuring-models.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Using the Web Channel - JiuwenClaw documentation</title>
+        <title>Your First Chat - JiuwenClaw documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -192,9 +192,9 @@
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting Started with Messages</a></li>
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Using the Web Channel</a></li>
+<li class="toctree-l1"><a class="reference internal" href="web-channel.html">Using the Web Channel</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configuring-models.html">Configuring JiuwenClaw</a></li>
-<li class="toctree-l1"><a class="reference internal" href="first-chat.html">Your First Chat</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Your First Chat</a></li>
 </ul>
 
 </div>
@@ -215,7 +215,7 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="../../_sources/jiuwenclaw/tutorials/web-channel.rst.txt" title="View this page">
+  <a class="muted-link" href="../../_sources/jiuwenclaw/tutorials/first-chat.rst.txt" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
@@ -233,94 +233,139 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="using-the-web-channel">
-<h1>Using the Web Channel<a class="headerlink" href="#using-the-web-channel" title="Link to this heading">¶</a></h1>
-<p>The WebChannel lets browsers talk to JiuwenClaw over WebSocket. This
-tutorial shows how to start the channel and test it.</p>
-<section id="start-the-webchannel">
-<h2>Start the WebChannel<a class="headerlink" href="#start-the-webchannel" title="Link to this heading">¶</a></h2>
+          <section id="your-first-chat">
+<h1>Your First Chat<a class="headerlink" href="#your-first-chat" title="Link to this heading">¶</a></h1>
+<p>Now that JiuwenClaw has an Agent connected to openjiuwen’s LLM, you can
+have a real conversation. Here’s how the pieces fit together.</p>
+<section id="how-the-llm-gets-called">
+<h2>How the LLM Gets Called<a class="headerlink" href="#how-the-llm-gets-called" title="Link to this heading">¶</a></h2>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>chat.send ──► WebChannel ──► Agent.chat(query)
+                                │
+                                │  reads config
+                                ▼
+                           get_config()
+                                │
+                                │  api_key, api_base, model_name
+                                ▼
+                           openjiuwen Model
+                                │
+                                │  HTTP POST /v1/chat/completions
+                                ▼
+                           OpenAI API (or compatible)
+                                │
+                                ▼
+                           streaming response
+                                │
+                                ▼
+                           chat.final event → browser
+</pre></div>
+</div>
+</section>
+<section id="step-1-configure-your-api-key">
+<h2>Step 1: Configure Your API Key<a class="headerlink" href="#step-1-configure-your-api-key" title="Link to this heading">¶</a></h2>
+<p>Create <code class="docutils literal notranslate"><span class="pre">~/.jiuwenclaw/config/.env</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">API_BASE</span><span class="o">=</span>https://api.openai.com/v1
+<span class="nv">API_KEY</span><span class="o">=</span>sk-your-real-key-here
+<span class="nv">MODEL_NAME</span><span class="o">=</span>gpt-4o
+<span class="nv">MODEL_PROVIDER</span><span class="o">=</span>openai
+</pre></div>
+</div>
+<p>Or use any OpenAI-compatible provider (Ollama, vLLM, DeepSeek, etc.):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">API_BASE</span><span class="o">=</span>http://localhost:11434/v1
+<span class="nv">API_KEY</span><span class="o">=</span>ollama
+<span class="nv">MODEL_NAME</span><span class="o">=</span>llama3
+<span class="nv">MODEL_PROVIDER</span><span class="o">=</span>openai
+</pre></div>
+</div>
+<p>The template at <code class="docutils literal notranslate"><span class="pre">jiuwenclaw/resources/config.yaml</span></code> references these
+variables:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">models</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">default</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">model_client_config</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">api_base</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${API_BASE}</span>
+<span class="w">      </span><span class="nt">api_key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${API_KEY}</span>
+<span class="w">      </span><span class="nt">model_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${MODEL_NAME}</span>
+<span class="w">      </span><span class="nt">client_provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${MODEL_PROVIDER:-openai}</span>
+</pre></div>
+</div>
+<p>At startup, <code class="docutils literal notranslate"><span class="pre">get_config()</span></code> reads the <code class="docutils literal notranslate"><span class="pre">.env</span></code> file and resolves
+<code class="docutils literal notranslate"><span class="pre">${API_KEY}</span></code> to your actual key.</p>
+</section>
+<section id="step-2-start-the-webchannel">
+<h2>Step 2: Start the WebChannel<a class="headerlink" href="#step-2-start-the-webchannel" title="Link to this heading">¶</a></h2>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">jiuwenclaw.channel.web_channel</span><span class="w"> </span><span class="kn">import</span> <span class="n">WebChannel</span><span class="p">,</span> <span class="n">WebChannelConfig</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-    <span class="n">config</span> <span class="o">=</span> <span class="n">WebChannelConfig</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">19000</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="s2">&quot;/ws&quot;</span><span class="p">)</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">WebChannelConfig</span><span class="o">.</span><span class="n">from_config</span><span class="p">()</span>  <span class="c1"># reads port from config</span>
     <span class="n">channel</span> <span class="o">=</span> <span class="n">WebChannel</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
     <span class="k">await</span> <span class="n">channel</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;WebChannel running on ws://127.0.0.1:19000/ws&quot;</span><span class="p">)</span>
-    <span class="c1"># Keep running until Ctrl+C</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ready at ws://127.0.0.1:19000/ws&quot;</span><span class="p">)</span>
     <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
 
 <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
 </pre></div>
 </div>
 </section>
-<section id="connect-from-browser">
-<h2>Connect from Browser<a class="headerlink" href="#connect-from-browser" title="Link to this heading">¶</a></h2>
-<p>Open <code class="docutils literal notranslate"><span class="pre">http://127.0.0.1:19000</span></code> (or any page) and use the browser console:</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="kd">const</span><span class="w"> </span><span class="nx">ws</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">WebSocket</span><span class="p">(</span><span class="s2">&quot;ws://127.0.0.1:19000/ws&quot;</span><span class="p">);</span>
-
-<span class="nx">ws</span><span class="p">.</span><span class="nx">onmessage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="nx">e</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;Received:&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">JSON</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">data</span><span class="p">));</span>
-
-<span class="nx">ws</span><span class="p">.</span><span class="nx">onopen</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nx">ws</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="nb">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">({</span>
-<span class="w">        </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;req&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;abc123&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">method</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;chat.send&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">params</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">query</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Hello, world!&quot;</span><span class="w"> </span><span class="p">}</span>
-<span class="w">    </span><span class="p">}));</span>
-<span class="p">};</span>
-
-<span class="c1">// Received: {&quot;type&quot;:&quot;event&quot;,&quot;event&quot;:&quot;connection.ack&quot;,...}</span>
-<span class="c1">// Received: {&quot;type&quot;:&quot;res&quot;,&quot;id&quot;:&quot;abc123&quot;,&quot;ok&quot;:true,&quot;payload&quot;:{&quot;echo&quot;:&quot;Hello, world!&quot;}}</span>
-</pre></div>
-</div>
-</section>
-<section id="connect-from-python">
-<h2>Connect from Python<a class="headerlink" href="#connect-from-python" title="Link to this heading">¶</a></h2>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<section id="step-3-send-a-message">
+<h2>Step 3: Send a Message<a class="headerlink" href="#step-3-send-a-message" title="Link to this heading">¶</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span><span class="o">,</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">websockets.asyncio.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">connect</span>
 
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test</span><span class="p">():</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">chat</span><span class="p">():</span>
     <span class="k">async</span> <span class="k">with</span> <span class="n">connect</span><span class="p">(</span><span class="s2">&quot;ws://127.0.0.1:19000/ws&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">ws</span><span class="p">:</span>
-        <span class="c1"># Read the connection ack</span>
-        <span class="n">ack</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="k">await</span> <span class="n">ws</span><span class="o">.</span><span class="n">recv</span><span class="p">())</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ack:&quot;</span><span class="p">,</span> <span class="n">ack</span><span class="p">[</span><span class="s2">&quot;event&quot;</span><span class="p">])</span>  <span class="c1"># connection.ack</span>
+        <span class="k">await</span> <span class="n">ws</span><span class="o">.</span><span class="n">recv</span><span class="p">()</span>  <span class="c1"># connection ack</span>
 
-        <span class="c1"># Send a request</span>
         <span class="k">await</span> <span class="n">ws</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
             <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;req&quot;</span><span class="p">,</span>
             <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;abc&quot;</span><span class="p">,</span>
             <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;chat.send&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="s2">&quot;Hello!&quot;</span><span class="p">},</span>
+            <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="s2">&quot;What is Python?&quot;</span><span class="p">},</span>
         <span class="p">}))</span>
 
-        <span class="c1"># Read the echo response</span>
-        <span class="n">res</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="k">await</span> <span class="n">ws</span><span class="o">.</span><span class="n">recv</span><span class="p">())</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Response:&quot;</span><span class="p">,</span> <span class="n">res</span><span class="p">[</span><span class="s2">&quot;payload&quot;</span><span class="p">][</span><span class="s2">&quot;echo&quot;</span><span class="p">])</span>  <span class="c1"># Hello!</span>
+        <span class="c1"># chat.final — the complete LLM response</span>
+        <span class="n">event</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="k">await</span> <span class="n">ws</span><span class="o">.</span><span class="n">recv</span><span class="p">())</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">event</span><span class="p">[</span><span class="s2">&quot;payload&quot;</span><span class="p">][</span><span class="s2">&quot;content&quot;</span><span class="p">])</span>
 
-<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">test</span><span class="p">())</span>
+        <span class="c1"># res — request acknowledged</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="k">await</span> <span class="n">ws</span><span class="o">.</span><span class="n">recv</span><span class="p">())</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ok:&quot;</span><span class="p">,</span> <span class="n">res</span><span class="p">[</span><span class="s2">&quot;ok&quot;</span><span class="p">])</span>
+
+<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">chat</span><span class="p">())</span>
 </pre></div>
 </div>
+<p>If your API key is configured correctly, you’ll see a real LLM response.</p>
 </section>
-<section id="what-s-happening">
-<h2>What’s Happening<a class="headerlink" href="#what-s-happening" title="Link to this heading">¶</a></h2>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Client                    WebChannel
-   │                          │
-   │── {&quot;type&quot;:&quot;req&quot;, ...} ──►│  JSON → Message
-   │                          │
-   │◄─ {&quot;type&quot;:&quot;event&quot;,       │  Connection ack
-   │    &quot;event&quot;:&quot;connection.ack&quot;} ──│
-   │                          │
-   │◄─ {&quot;type&quot;:&quot;res&quot;,         │  Echo (no agent yet)
-   │    &quot;payload&quot;:{&quot;echo&quot;:&quot;Hello!&quot;}} ──│
+<section id="what-the-agent-does-internally">
+<h2>What the Agent Does Internally<a class="headerlink" href="#what-the-agent-does-internally" title="Link to this heading">¶</a></h2>
+<p>When <code class="docutils literal notranslate"><span class="pre">Agent.chat(query)</span></code> is called:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># agent.py (simplified)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">openjiuwen.core.foundation.llm.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">Model</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">openjiuwen.core.foundation.llm.schema.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelClientConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">openjiuwen.core.foundation.llm.schema.message</span><span class="w"> </span><span class="kn">import</span> <span class="n">UserMessage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jiuwenclaw.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_config</span>
+
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">get_config</span><span class="p">()</span>
+<span class="n">mcc</span> <span class="o">=</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;models&quot;</span><span class="p">][</span><span class="s2">&quot;default&quot;</span><span class="p">][</span><span class="s2">&quot;model_client_config&quot;</span><span class="p">]</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span>
+    <span class="n">model_client_config</span><span class="o">=</span><span class="n">ModelClientConfig</span><span class="p">(</span>
+        <span class="n">api_key</span><span class="o">=</span><span class="n">mcc</span><span class="p">[</span><span class="s2">&quot;api_key&quot;</span><span class="p">],</span>       <span class="c1"># resolved from ${API_KEY}</span>
+        <span class="n">api_base</span><span class="o">=</span><span class="n">mcc</span><span class="p">[</span><span class="s2">&quot;api_base&quot;</span><span class="p">],</span>     <span class="c1"># resolved from ${API_BASE}</span>
+        <span class="n">model_name</span><span class="o">=</span><span class="n">mcc</span><span class="p">[</span><span class="s2">&quot;model_name&quot;</span><span class="p">],</span> <span class="c1"># resolved from ${MODEL_NAME}</span>
+        <span class="n">client_provider</span><span class="o">=</span><span class="n">mcc</span><span class="p">[</span><span class="s2">&quot;client_provider&quot;</span><span class="p">],</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+<span class="n">messages</span> <span class="o">=</span> <span class="p">[</span><span class="n">UserMessage</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="n">query</span><span class="p">)]</span>
+<span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">model</span><span class="o">.</span><span class="n">invoke</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">mcc</span><span class="p">[</span><span class="s2">&quot;model_name&quot;</span><span class="p">])</span>  <span class="c1"># ← actual HTTP call</span>
+<span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">content</span>
 </pre></div>
 </div>
 </section>
 <section id="next-steps">
 <h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading">¶</a></h2>
 <ul class="simple">
-<li><p>Return to <a class="reference internal" href="getting-started.html"><span class="doc">Getting Started with Messages</span></a> for Message basics.</p></li>
+<li><p><a class="reference internal" href="configuring-models.html"><span class="doc">Configuring JiuwenClaw</span></a> for more provider options.</p></li>
 </ul>
 </section>
 </section>
@@ -330,23 +375,15 @@ tutorial shows how to start the channel and test it.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="configuring-models.html">
-              <div class="page-info">
-                <div class="context">
-                  <span>Next</span>
-                </div>
-                <div class="title">Configuring JiuwenClaw</div>
-              </div>
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-            </a>
-          <a class="prev-page" href="getting-started.html">
+          
+          <a class="prev-page" href="configuring-models.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Getting Started with Messages</div>
+                <div class="title">Configuring JiuwenClaw</div>
                 
               </div>
             </a>
@@ -380,11 +417,12 @@ tutorial shows how to start the channel and test it.</p>
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">Using the Web Channel</a><ul>
-<li><a class="reference internal" href="#start-the-webchannel">Start the WebChannel</a></li>
-<li><a class="reference internal" href="#connect-from-browser">Connect from Browser</a></li>
-<li><a class="reference internal" href="#connect-from-python">Connect from Python</a></li>
-<li><a class="reference internal" href="#what-s-happening">What’s Happening</a></li>
+<li><a class="reference internal" href="#">Your First Chat</a><ul>
+<li><a class="reference internal" href="#how-the-llm-gets-called">How the LLM Gets Called</a></li>
+<li><a class="reference internal" href="#step-1-configure-your-api-key">Step 1: Configure Your API Key</a></li>
+<li><a class="reference internal" href="#step-2-start-the-webchannel">Step 2: Start the WebChannel</a></li>
+<li><a class="reference internal" href="#step-3-send-a-message">Step 3: Send a Message</a></li>
+<li><a class="reference internal" href="#what-the-agent-does-internally">What the Agent Does Internally</a></li>
 <li><a class="reference internal" href="#next-steps">Next Steps</a></li>
 </ul>
 </li>
