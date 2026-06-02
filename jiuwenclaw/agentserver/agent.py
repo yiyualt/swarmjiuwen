@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import sys
+import time
 from pathlib import Path
 from typing import Any, AsyncIterator
 
@@ -56,6 +57,12 @@ class Agent:
         self._memory_context = self._memory.load()
         self._max_turns = 100
 
+        # Session history: session_id → list of (role, content) tuples
+        self._history: dict[str, list[dict]] = {}
+        self._last_access: dict[str, float] = {}
+        self._max_sessions = 50
+        self._session_timeout = 3600  # 1 hour
+
     @property
     def memory(self) -> MemoryManager:
         return self._memory
@@ -95,16 +102,39 @@ class Agent:
             parts.append(f"Memory (what you know about the user):\n{self._memory_context}")
         return "\n\n".join(parts)
 
-    async def chat(self, query: str) -> str:
+    def _get_history(self, session_id: str) -> list:
+        """Get history, evicting idle sessions if needed."""
+        now = time.time()
+        # Evict idle sessions
+        stale = [s for s, t in self._last_access.items() if now - t > self._session_timeout]
+        for s in stale:
+            self._history.pop(s, None)
+            self._last_access.pop(s, None)
+        # LRU eviction if over capacity
+        while len(self._history) >= self._max_sessions:
+            oldest = min(self._last_access, key=lambda k: self._last_access[k])
+            self._history.pop(oldest, None)
+            self._last_access.pop(oldest, None)
+        self._last_access[session_id] = now
+        return self._history.setdefault(session_id, [])
+
+    async def chat(self, query: str, session_id: str = "") -> str:
         model = self._get_model()
         cfg = get_config()
         model_name = cfg["models"]["default"]["model_client_config"].get("model_name", "")
         tool_schemas = self._tools.get_schemas() or None
+        history = self._get_history(session_id) if session_id else []
 
         messages: list[Any] = []
         system = self._build_system_message()
         if system:
             messages.append(SystemMessage(content=system))
+        # Inject history
+        for h in history:
+            if h["role"] == "user":
+                messages.append(UserMessage(content=h["content"]))
+            else:
+                messages.append(AssistantMessage(content=h["content"]))
         messages.append(UserMessage(content=query))
 
         # ── React loop ──────────────────────────────────────────
@@ -123,7 +153,11 @@ class Agent:
 
             if tool_call is None:
                 # No tool call — final answer
-                return response.content if hasattr(response, "content") else str(response)
+                answer = response.content if hasattr(response, "content") else str(response)
+                if session_id:
+                    history.append({"role": "user", "content": query})
+                    history.append({"role": "assistant", "content": answer})
+                return answer
 
             # Execute tool and feed result back
             _logger.info("Tool call: %s(%s)", tool_call["name"], tool_call["params"])

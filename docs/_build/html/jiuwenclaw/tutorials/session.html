@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Using the Web Channel" href="web-channel.html"><link rel="prev" title="JiuwenClaw Documentation" href="../../index.html">
+<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="prev" title="Architecture" href="architecture.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Getting Started with Messages - JiuwenClaw documentation</title>
+        <title>Session History - JiuwenClaw documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -191,14 +191,14 @@
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <ul class="current">
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Getting Started with Messages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting Started with Messages</a></li>
 <li class="toctree-l1"><a class="reference internal" href="web-channel.html">Using the Web Channel</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configuring-models.html">Configuring JiuwenClaw</a></li>
 <li class="toctree-l1"><a class="reference internal" href="first-chat.html">Your First Chat</a></li>
 <li class="toctree-l1"><a class="reference internal" href="memory.html">Persistent Memory</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tools.html">Using Tools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture</a></li>
-<li class="toctree-l1"><a class="reference internal" href="session.html">Session History</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Session History</a></li>
 </ul>
 
 </div>
@@ -219,7 +219,7 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="../../_sources/jiuwenclaw/tutorials/getting-started.rst.txt" title="View this page">
+  <a class="muted-link" href="../../_sources/jiuwenclaw/tutorials/session.rst.txt" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
@@ -237,64 +237,72 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="getting-started-with-messages">
-<h1>Getting Started with Messages<a class="headerlink" href="#getting-started-with-messages" title="Link to this heading">¶</a></h1>
-<p>The Message is the universal envelope that every JiuwenClaw component
-uses to communicate. This tutorial shows you how to create, serialize,
-and deserialize messages.</p>
-<section id="install">
-<h2>Install<a class="headerlink" href="#install" title="Link to this heading">¶</a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+          <section id="session-history">
+<h1>Session History<a class="headerlink" href="#session-history" title="Link to this heading">¶</a></h1>
+<p>JiuwenClaw remembers conversation context within each session. Messages
+in the same session are included in the LLM’s context, enabling natural
+multi-turn dialogue.</p>
+<section id="how-it-works">
+<h2>How It Works<a class="headerlink" href="#how-it-works" title="Link to this heading">¶</a></h2>
+<p>Each <code class="docutils literal notranslate"><span class="pre">chat.send</span></code> request includes a <code class="docutils literal notranslate"><span class="pre">session_id</span></code>. Agent stores past
+messages per session and injects them into the LLM call:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Session &quot;sess-1&quot;
+┌───────────────────────────────────────────┐
+│ User:    &quot;My name is Alex&quot;                │  ← stored
+│ Agent:   &quot;Got it, Alex!&quot;                  │  ← stored
+│                                           │
+│ User:    &quot;What is my name?&quot;               │  ← new query
+│           ↑                               │
+│           past messages injected as context│
+│                                           │
+│ Agent:   &quot;Your name is Alex&quot;              │  ← uses history
+└───────────────────────────────────────────┘
+
+Session &quot;sess-2&quot;
+┌───────────────────────────────────────────┐
+│ User:    &quot;What is my name?&quot;               │
+│ Agent:   &quot;I don&#39;t know your name yet.&quot;    │  ← isolated from sess-1
+└───────────────────────────────────────────┘
 </pre></div>
 </div>
 </section>
-<section id="create-your-first-message">
-<h2>Create Your First Message<a class="headerlink" href="#create-your-first-message" title="Link to this heading">¶</a></h2>
-<p>A <strong>request</strong> is what a client sends to ask the agent to do something:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">jiuwenclaw.schema.message</span><span class="w"> </span><span class="kn">import</span> <span class="n">Message</span><span class="p">,</span> <span class="n">ReqMethod</span>
+<section id="sending-messages-with-session-ids">
+<h2>Sending Messages with Session IDs<a class="headerlink" href="#sending-messages-with-session-ids" title="Link to this heading">¶</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">await</span> <span class="n">ws</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
+    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;req&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;abc&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;chat.send&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="s2">&quot;My name is Alex&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="s2">&quot;sess-1&quot;</span>        <span class="c1"># ← same session = shared context</span>
+    <span class="p">},</span>
+<span class="p">}))</span>
 
-<span class="n">msg</span> <span class="o">=</span> <span class="n">Message</span><span class="o">.</span><span class="n">new_req</span><span class="p">(</span>
-    <span class="n">ReqMethod</span><span class="o">.</span><span class="n">CHAT_SEND</span><span class="p">,</span>
-    <span class="n">channel_id</span><span class="o">=</span><span class="s2">&quot;web&quot;</span><span class="p">,</span>
-    <span class="n">session_id</span><span class="o">=</span><span class="s2">&quot;sess-001&quot;</span><span class="p">,</span>
-    <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="s2">&quot;What is the capital of France?&quot;</span><span class="p">},</span>
-<span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">to_json</span><span class="p">())</span>
-<span class="c1"># {&quot;id&quot;: &quot;a1b2c3d4e5f6&quot;, &quot;type&quot;: &quot;req&quot;, &quot;method&quot;: &quot;chat.send&quot;, ...}</span>
-</pre></div>
-</div>
-<p>A <strong>response</strong> is what the agent sends back:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">res</span> <span class="o">=</span> <span class="n">Message</span><span class="o">.</span><span class="n">new_res</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">payload</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="s2">&quot;Paris&quot;</span><span class="p">})</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">to_json</span><span class="p">())</span>
-<span class="c1"># {&quot;id&quot;: &quot;a1b2c3d4e5f6&quot;, &quot;type&quot;: &quot;res&quot;, &quot;ok&quot;: true, &quot;payload&quot;: {&quot;answer&quot;: &quot;Paris&quot;}}</span>
-</pre></div>
-</div>
-<p>An <strong>event</strong> is what the agent pushes during processing:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">jiuwenclaw.schema.message</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventType</span>
-
-<span class="n">event</span> <span class="o">=</span> <span class="n">Message</span><span class="o">.</span><span class="n">new_event</span><span class="p">(</span>
-    <span class="n">EventType</span><span class="o">.</span><span class="n">CHAT_DELTA</span><span class="p">,</span>
-    <span class="n">payload</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;The capital is &quot;</span><span class="p">},</span>
-<span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">to_json</span><span class="p">())</span>
-<span class="c1"># {&quot;type&quot;: &quot;event&quot;, &quot;event&quot;: &quot;chat.delta&quot;, &quot;payload&quot;: {&quot;content&quot;: &quot;The capital is &quot;}}</span>
+<span class="c1"># Later, same session</span>
+<span class="k">await</span> <span class="n">ws</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
+    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;req&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;def&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;chat.send&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="s2">&quot;What is my name?&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="s2">&quot;sess-1&quot;</span>        <span class="c1"># ← Agent remembers &quot;Alex&quot;</span>
+    <span class="p">},</span>
+<span class="p">}))</span>
 </pre></div>
 </div>
 </section>
-<section id="parse-incoming-messages">
-<h2>Parse Incoming Messages<a class="headerlink" href="#parse-incoming-messages" title="Link to this heading">¶</a></h2>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">raw</span> <span class="o">=</span> <span class="s1">&#39;{&quot;type&quot;: &quot;req&quot;, &quot;id&quot;: &quot;abc&quot;, &quot;method&quot;: &quot;chat.send&quot;, &quot;params&quot;: {&quot;query&quot;: &quot;Hi&quot;}}&#39;</span>
-<span class="n">msg</span> <span class="o">=</span> <span class="n">Message</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">req_method</span><span class="p">)</span>   <span class="c1"># ReqMethod.CHAT_SEND</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>       <span class="c1"># {&quot;query&quot;: &quot;Hi&quot;}</span>
-</pre></div>
-</div>
+<section id="session-lifecycle">
+<h2>Session Lifecycle<a class="headerlink" href="#session-lifecycle" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><strong>Active</strong>: Session receives messages, history grows</p></li>
+<li><p><strong>Idle</strong>: No messages for &gt;1 hour → history evicted from memory</p></li>
+<li><p><strong>Max 50 sessions</strong>: Oldest idle session evicted when limit reached</p></li>
+</ul>
 </section>
 <section id="next-steps">
 <h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading">¶</a></h2>
 <ul class="simple">
-<li><p>Continue to <a class="reference internal" href="web-channel.html"><span class="doc">Using the Web Channel</span></a> to make messages flow over WebSocket.</p></li>
+<li><p><a class="reference internal" href="memory.html"><span class="doc">Persistent Memory</span></a> for long-term (cross-session) memory.</p></li>
 </ul>
 </section>
 </section>
@@ -304,23 +312,15 @@ and deserialize messages.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="web-channel.html">
-              <div class="page-info">
-                <div class="context">
-                  <span>Next</span>
-                </div>
-                <div class="title">Using the Web Channel</div>
-              </div>
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-            </a>
-          <a class="prev-page" href="../../index.html">
+          
+          <a class="prev-page" href="architecture.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Home</div>
+                <div class="title">Architecture</div>
                 
               </div>
             </a>
@@ -354,10 +354,10 @@ and deserialize messages.</p>
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">Getting Started with Messages</a><ul>
-<li><a class="reference internal" href="#install">Install</a></li>
-<li><a class="reference internal" href="#create-your-first-message">Create Your First Message</a></li>
-<li><a class="reference internal" href="#parse-incoming-messages">Parse Incoming Messages</a></li>
+<li><a class="reference internal" href="#">Session History</a><ul>
+<li><a class="reference internal" href="#how-it-works">How It Works</a></li>
+<li><a class="reference internal" href="#sending-messages-with-session-ids">Sending Messages with Session IDs</a></li>
+<li><a class="reference internal" href="#session-lifecycle">Session Lifecycle</a></li>
 <li><a class="reference internal" href="#next-steps">Next Steps</a></li>
 </ul>
 </li>

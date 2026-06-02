@@ -59,7 +59,7 @@ class AgentWebSocketServer:
         query = msg.params.get("query", msg.params.get("content", ""))
 
         try:
-            answer = await self._agent.chat(query)
+            answer = await self._agent.chat(query, msg.session_id)
 
             # chat.final event
             event = Message.new_event(
