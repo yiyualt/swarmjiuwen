@@ -1,7 +1,8 @@
-"""Agent — single-turn chat with memory."""
+"""Agent — single-turn chat with memory and tools."""
 
 from __future__ import annotations
 
+import json
 import logging
 import sys
 from pathlib import Path
@@ -14,7 +15,14 @@ if str(_vendor_root) not in sys.path:
 
 from jiuwenclaw.config import get_config
 from jiuwenclaw.agentserver.memory.manager import MemoryManager
+from jiuwenclaw.agentserver.tools.tool_manager import ToolManager
+
+# Memory tools
 from jiuwenclaw.agentserver.tools.memory_tools import RecallTool, RememberTool
+# File tools
+from jiuwenclaw.agentserver.tools.file_tools import ReadFileTool, WriteFileTool
+# Command tool
+from jiuwenclaw.agentserver.tools.command_tools import CommandTool
 
 _logger = logging.getLogger(__name__)
 from openjiuwen.core.foundation.llm.model import Model
@@ -22,21 +30,32 @@ from openjiuwen.core.foundation.llm.schema.config import (
     ModelClientConfig,
     ModelRequestConfig,
 )
-from openjiuwen.core.foundation.llm.schema.message import UserMessage
-from openjiuwen.core.foundation.llm.schema.message import SystemMessage
+from openjiuwen.core.foundation.llm.schema.message import SystemMessage, UserMessage
+            # Feed tool result back to LLM for final answer
+from openjiuwen.core.foundation.llm.schema.message import (
+    AssistantMessage,
+    ToolMessage,
+)
 
 class Agent:
-    """Single-turn chat agent with persistent memory.
+    """Single-turn chat agent with persistent memory and tools.
 
-    Loads memory files into the system prompt before each call.
-    Exposes remember/recall tools so the LLM can save and search facts.
+    Loads memory files into the system prompt. Passes tool schemas to the
+    LLM so it can call tools (read_file, write_file, command, remember, recall).
     """
 
-    def __init__(self):
+    def __init__(self, workspace_dir: Path | None = None):
+        self.workspace_dir = workspace_dir or Path.cwd()
         self._model: Any = None
         self._memory = MemoryManager()
-        self._remember_tool = RememberTool(self._memory)
-        self._recall_tool = RecallTool(self._memory)
+        self._tools = ToolManager()
+
+        # Register all tools
+        self._tools.register(RememberTool(self._memory))
+        self._tools.register(RecallTool(self._memory))
+        self._tools.register(ReadFileTool(self.workspace_dir))
+        self._tools.register(WriteFileTool(self.workspace_dir))
+        self._tools.register(CommandTool(self.workspace_dir))
 
         # Load memory on startup
         self._memory_context = self._memory.load()
@@ -44,6 +63,10 @@ class Agent:
     @property
     def memory(self) -> MemoryManager:
         return self._memory
+
+    @property
+    def tools(self) -> ToolManager:
+        return self._tools
 
     def _get_model(self) -> Any:
         """Lazy-init the openjiuwen Model from current config."""
@@ -78,9 +101,7 @@ class Agent:
         """Build message list with memory context as system prompt."""
         messages: list[Any] = []
 
-        # Inject memory as system context
         if self._memory_context:
-            
             messages.append(SystemMessage(
                 content=f"You have access to persistent memory. The following is what you know about the user and past conversations:\n\n{self._memory_context}"
             ))
@@ -88,13 +109,43 @@ class Agent:
         messages.append(UserMessage(content=query))
         return messages
 
+    def _parse_tool_call(self, response: Any) -> dict[str, Any] | None:
+        """Extract a tool call from the LLM response."""
+        content = response.content if hasattr(response, "content") else str(response)
+        if not content:
+            return None
+
+        # Check for tool_calls in the response (OpenAI format)
+        if hasattr(response, "tool_calls") and response.tool_calls:
+            tc = response.tool_calls[0]
+            return {"name": tc.function.name, "params": json.loads(tc.function.arguments)}
+
+        return None
+
     async def chat(self, query: str) -> str:
-        """Send a query to the LLM and return the full response."""
+        """Send a query to the LLM, execute any tool calls, return the response."""
         model = self._get_model()
         cfg = get_config()
         model_name = cfg["models"]["default"]["model_client_config"].get("model_name", "")
         messages = self._build_messages(query)
-        response = await model.invoke(messages, model=model_name)
+
+        tool_schemas = self._tools.get_schemas() or None
+
+        response = await model.invoke(messages, model=model_name, tools=tool_schemas)
+
+        # Check if LLM wants to call a tool
+        tool_call = self._parse_tool_call(response)
+        if tool_call:
+            _logger.info("Tool call: %s(%s)", tool_call["name"], tool_call["params"])
+            result = await self._tools.execute(tool_call["name"], tool_call["params"])
+
+            messages.append(AssistantMessage(content=response.content or ""))
+            messages.append(ToolMessage(
+                content=result.output if result.success else f"Error: {result.error}",
+                tool_call_id=getattr(response.tool_calls[0], "id", "") if hasattr(response, "tool_calls") and response.tool_calls else "",
+            ))
+            response = await model.invoke(messages, model=model_name, tools=tool_schemas)
+
         return response.content if hasattr(response, "content") else str(response)
 
     async def chat_stream(self, query: str) -> AsyncIterator[str]:
@@ -103,6 +154,7 @@ class Agent:
         cfg = get_config()
         model_name = cfg["models"]["default"]["model_client_config"].get("model_name", "")
         messages = self._build_messages(query)
+
         async for chunk in model.stream(messages, model=model_name):
             if hasattr(chunk, "content") and chunk.content:
                 yield chunk.content

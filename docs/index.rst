@@ -9,3 +9,4 @@ JiuwenClaw Documentation
    jiuwenclaw/tutorials/configuring-models
    jiuwenclaw/tutorials/first-chat
    jiuwenclaw/tutorials/memory
+   jiuwenclaw/tutorials/tools

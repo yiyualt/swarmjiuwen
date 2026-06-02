@@ -74,3 +74,5 @@
 2026-06-03 03:13:24 | common | default_trace_id | INFO | Registered parser ImageParser for .webp
 2026-06-03 03:13:24 | common | default_trace_id | INFO | Registered parser ImageParser for .gif
 2026-06-03 03:13:24 | common | default_trace_id | INFO | Registered parser ImageParser for .jfif
+2026-06-03 03:24:18 | common | default_trace_id | INFO | Registered connector pool type: default
+2026-06-03 03:24:18 | common | default_trace_id | INFO | Registered connector pool type: httpx
