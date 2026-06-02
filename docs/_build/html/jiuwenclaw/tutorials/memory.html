@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Your First Chat" href="first-chat.html"><link rel="prev" title="Using the Web Channel" href="web-channel.html">
+<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="prev" title="Your First Chat" href="first-chat.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Configuring JiuwenClaw - JiuwenClaw documentation</title>
+        <title>Persistent Memory - JiuwenClaw documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -193,9 +193,9 @@
   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting Started with Messages</a></li>
 <li class="toctree-l1"><a class="reference internal" href="web-channel.html">Using the Web Channel</a></li>
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Configuring JiuwenClaw</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-models.html">Configuring JiuwenClaw</a></li>
 <li class="toctree-l1"><a class="reference internal" href="first-chat.html">Your First Chat</a></li>
-<li class="toctree-l1"><a class="reference internal" href="memory.html">Persistent Memory</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Persistent Memory</a></li>
 </ul>
 
 </div>
@@ -216,7 +216,7 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="../../_sources/jiuwenclaw/tutorials/configuring-models.rst.txt" title="View this page">
+  <a class="muted-link" href="../../_sources/jiuwenclaw/tutorials/memory.rst.txt" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
@@ -234,75 +234,75 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="configuring-jiuwenclaw">
-<h1>Configuring JiuwenClaw<a class="headerlink" href="#configuring-jiuwenclaw" title="Link to this heading">¶</a></h1>
-<p>The Config system lets you change settings without editing source code.
-A full template ships with the package; you only write what you want to
-change.</p>
-<section id="how-it-works">
-<h2>How It Works<a class="headerlink" href="#how-it-works" title="Link to this heading">¶</a></h2>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Package template                          Your override
-┌──────────────────────┐                 ┌─────────────┐
-│ channels:            │      merge      │ channels:   │
-│   web:               │  ─────────────► │   web:      │
-│     port: 19000      │                 │     port: 3000
-│     host: 127.0.0.1  │                 └─────────────┘
-│ models:              │
-│   default:           │       ┌──────────────────────┐
-│     temperature: 0.95│       │ channels:            │
-└──────────────────────┘       │   web:               │
-                               │     port: 3000        │ ← your value
-                               │     host: 127.0.0.1   │ ← template default
-                               │ models:               │
-                               │   default:            │
-                               │     temperature: 0.95 │ ← template default
-                               └──────────────────────┘
+          <section id="persistent-memory">
+<h1>Persistent Memory<a class="headerlink" href="#persistent-memory" title="Link to this heading">¶</a></h1>
+<p>JiuwenClaw remembers facts across conversations using file-based memory.
+Everything is stored as Markdown files under the workspace memory directory.</p>
+<section id="how-memory-works">
+<h2>How Memory Works<a class="headerlink" href="#how-memory-works" title="Link to this heading">¶</a></h2>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>~/.jiuwenclaw/agent/jiuwenclaw_workspace/memory/
+├── MEMORY.md           # Long-term memory (loaded every session)
+├── USER.md             # User profile (learned over time)
+└── daily_memory/       # Daily memory files (YYYY-MM-DD.md)
 </pre></div>
 </div>
+<p>On startup, Agent loads all memory files and injects them into the system
+prompt. The LLM sees past facts and user preferences automatically.</p>
+<p>The Agent also has two memory tools:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">remember</span></code> — save a fact to memory</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">recall</span></code> — search memory for a query</p></li>
+</ul>
 </section>
-<section id="set-your-api-key">
-<h2>Set Your API Key<a class="headerlink" href="#set-your-api-key" title="Link to this heading">¶</a></h2>
-<p>Create <code class="docutils literal notranslate"><span class="pre">~/.jiuwenclaw/config/.env</span></code> with your credentials:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">API_BASE</span><span class="o">=</span>https://api.openai.com/v1
-<span class="nv">API_KEY</span><span class="o">=</span>sk-your-key-here
-<span class="nv">MODEL_NAME</span><span class="o">=</span>gpt-4o
-<span class="nv">MODEL_PROVIDER</span><span class="o">=</span>openai
-</pre></div>
-</div>
-</section>
-<section id="change-the-web-port">
-<h2>Change the Web Port<a class="headerlink" href="#change-the-web-port" title="Link to this heading">¶</a></h2>
-<p>Create <code class="docutils literal notranslate"><span class="pre">~/.jiuwenclaw/config/config.yaml</span></code>:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">channels</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">web</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3000</span>
-</pre></div>
-</div>
-<p>Restart JiuwenClaw, and the WebChannel now listens on port 3000.
-Everything else stays at template defaults.</p>
-</section>
-<section id="environment-variable-syntax">
-<h2>Environment Variable Syntax<a class="headerlink" href="#environment-variable-syntax" title="Link to this heading">¶</a></h2>
-<p>Any config value can reference environment variables:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">api_key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${API_KEY}</span><span class="w">              </span><span class="c1"># required — empty if not set</span>
-<span class="nt">api_base</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${API_BASE:-https://api.openai.com/v1}</span><span class="w">  </span><span class="c1"># with default</span>
-</pre></div>
-</div>
-</section>
-<section id="read-config-in-code">
-<h2>Read Config in Code<a class="headerlink" href="#read-config-in-code" title="Link to this heading">¶</a></h2>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">jiuwenclaw.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_config</span>
+<section id="using-memory-in-chat">
+<h2>Using Memory in Chat<a class="headerlink" href="#using-memory-in-chat" title="Link to this heading">¶</a></h2>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>You:     My name is Alex and I prefer Python over JavaScript.
 
-<span class="n">config</span> <span class="o">=</span> <span class="n">get_config</span><span class="p">()</span>
-<span class="n">port</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;channels&quot;</span><span class="p">][</span><span class="s2">&quot;web&quot;</span><span class="p">][</span><span class="s2">&quot;port&quot;</span><span class="p">]</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Web port: </span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+Agent:   Got it, Alex. I&#39;ll remember that you prefer Python.
+
+         [Agent calls remember(content=&quot;User&#39;s name is Alex.
+         Prefers Python over JavaScript.&quot;)]
+
+You:     What language should I use for this new API?
+
+Agent:   Since you prefer Python, I&#39;d recommend FastAPI...
 </pre></div>
 </div>
+<p>The agent recalled Alex’s Python preference from memory without being
+told again.</p>
+</section>
+<section id="edit-memory-files-directly">
+<h2>Edit Memory Files Directly<a class="headerlink" href="#edit-memory-files-directly" title="Link to this heading">¶</a></h2>
+<p>You can edit memory files with any text editor:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Add a fact about yourself</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;- Works at Acme Corp&quot;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>~/.jiuwenclaw/agent/jiuwenclaw_workspace/memory/USER.md
+
+<span class="c1"># Add a permanent memory</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Project deployment uses Docker on port 8080&quot;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>~/.jiuwenclaw/agent/jiuwenclaw_workspace/memory/MEMORY.md
+</pre></div>
+</div>
+<p>Changes take effect on the next message — no restart needed.</p>
+</section>
+<section id="what-gets-remembered">
+<h2>What Gets Remembered<a class="headerlink" href="#what-gets-remembered" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">USER.md</span></code></dt><dd><p>Facts about you: name, preferences, projects, tools you use.
+Built up automatically as you chat.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">MEMORY.md</span></code></dt><dd><p>Long-term knowledge: project details, decisions, important context.
+Edit this manually for persistent facts.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">daily_memory/YYYY-MM-DD.md</span></code></dt><dd><p>Daily conversation highlights. Created automatically when the agent
+calls <code class="docutils literal notranslate"><span class="pre">remember</span></code>.</p>
+</dd>
+</dl>
 </section>
 <section id="next-steps">
 <h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading">¶</a></h2>
 <ul class="simple">
-<li><p>Return to <a class="reference internal" href="web-channel.html"><span class="doc">Using the Web Channel</span></a> to see the config in action.</p></li>
+<li><p><a class="reference internal" href="first-chat.html"><span class="doc">Your First Chat</span></a> to see memory in action.</p></li>
 </ul>
 </section>
 </section>
@@ -312,23 +312,15 @@ Everything else stays at template defaults.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="first-chat.html">
-              <div class="page-info">
-                <div class="context">
-                  <span>Next</span>
-                </div>
-                <div class="title">Your First Chat</div>
-              </div>
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-            </a>
-          <a class="prev-page" href="web-channel.html">
+          
+          <a class="prev-page" href="first-chat.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Using the Web Channel</div>
+                <div class="title">Your First Chat</div>
                 
               </div>
             </a>
@@ -362,12 +354,11 @@ Everything else stays at template defaults.</p>
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">Configuring JiuwenClaw</a><ul>
-<li><a class="reference internal" href="#how-it-works">How It Works</a></li>
-<li><a class="reference internal" href="#set-your-api-key">Set Your API Key</a></li>
-<li><a class="reference internal" href="#change-the-web-port">Change the Web Port</a></li>
-<li><a class="reference internal" href="#environment-variable-syntax">Environment Variable Syntax</a></li>
-<li><a class="reference internal" href="#read-config-in-code">Read Config in Code</a></li>
+<li><a class="reference internal" href="#">Persistent Memory</a><ul>
+<li><a class="reference internal" href="#how-memory-works">How Memory Works</a></li>
+<li><a class="reference internal" href="#using-memory-in-chat">Using Memory in Chat</a></li>
+<li><a class="reference internal" href="#edit-memory-files-directly">Edit Memory Files Directly</a></li>
+<li><a class="reference internal" href="#what-gets-remembered">What Gets Remembered</a></li>
 <li><a class="reference internal" href="#next-steps">Next Steps</a></li>
 </ul>
 </li>

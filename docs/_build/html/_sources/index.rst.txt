@@ -8,3 +8,4 @@ JiuwenClaw Documentation
    jiuwenclaw/tutorials/web-channel
    jiuwenclaw/tutorials/configuring-models
    jiuwenclaw/tutorials/first-chat
+   jiuwenclaw/tutorials/memory

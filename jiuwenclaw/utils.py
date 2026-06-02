@@ -15,12 +15,28 @@ _raw_data_dir = os.environ.get("JIUWENCLAW_DATA_DIR", "").strip()
 USER_WORKSPACE_DIR = (
     Path(_raw_data_dir).expanduser().resolve()
     if _raw_data_dir
-    else Path.home() / ".jiuwenclaw"
+    else Path.cwd() / ".jiuwenclaw"
 )
 
 
 def get_user_workspace_dir() -> Path:
     return USER_WORKSPACE_DIR
+
+
+def get_agent_root_dir() -> Path:
+    return get_user_workspace_dir() / "agent"
+
+
+def get_agent_workspace_dir() -> Path:
+    return get_agent_root_dir() / "jiuwenclaw_workspace"
+
+
+def get_agent_memory_dir() -> Path:
+    return get_agent_workspace_dir() / "memory"
+
+
+def get_agent_skills_dir() -> Path:
+    return get_agent_workspace_dir() / "skills"
 
 
 def get_config_dir() -> Path:
