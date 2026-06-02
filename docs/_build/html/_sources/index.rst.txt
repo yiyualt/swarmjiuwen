@@ -3,12 +3,8 @@ JiuwenClaw Documentation
 
 .. toctree::
    :maxdepth: 2
-   :caption: Tutorials
 
    jiuwenclaw/tutorials/getting-started
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Examples
-
+   jiuwenclaw/tutorials/web-channel
    jiuwenclaw/examples/message-example
+   jiuwenclaw/examples/channel-example

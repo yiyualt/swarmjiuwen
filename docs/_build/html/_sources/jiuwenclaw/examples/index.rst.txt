@@ -1,0 +1,10 @@
+Examples
+========
+
+Ready-to-use patterns and reference code.
+
+.. toctree::
+   :maxdepth: 2
+
+   message-example
+   channel-example

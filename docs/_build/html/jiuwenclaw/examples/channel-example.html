@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Using the Web Channel" href="web-channel.html"><link rel="prev" title="JiuwenClaw Documentation" href="../../index.html">
+<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="prev" title="Message Usage Patterns" href="message-example.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Getting Started with Messages - JiuwenClaw documentation</title>
+        <title>Channel Usage Patterns - JiuwenClaw documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -191,10 +191,10 @@
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <ul class="current">
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Getting Started with Messages</a></li>
-<li class="toctree-l1"><a class="reference internal" href="web-channel.html">Using the Web Channel</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../examples/message-example.html">Message Usage Patterns</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../examples/channel-example.html">Channel Usage Patterns</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/getting-started.html">Getting Started with Messages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/web-channel.html">Using the Web Channel</a></li>
+<li class="toctree-l1"><a class="reference internal" href="message-example.html">Message Usage Patterns</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Channel Usage Patterns</a></li>
 </ul>
 
 </div>
@@ -215,7 +215,7 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="../../_sources/jiuwenclaw/tutorials/getting-started.rst.txt" title="View this page">
+  <a class="muted-link" href="../../_sources/jiuwenclaw/examples/channel-example.rst.txt" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
@@ -233,65 +233,85 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="getting-started-with-messages">
-<h1>Getting Started with Messages<a class="headerlink" href="#getting-started-with-messages" title="Link to this heading">¶</a></h1>
-<p>The Message is the universal envelope that every JiuwenClaw component
-uses to communicate. This tutorial shows you how to create, serialize,
-and deserialize messages.</p>
-<section id="install">
-<h2>Install<a class="headerlink" href="#install" title="Link to this heading">¶</a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+          <section id="channel-usage-patterns">
+<h1>Channel Usage Patterns<a class="headerlink" href="#channel-usage-patterns" title="Link to this heading">¶</a></h1>
+<p>Practical examples for working with WebChannel.</p>
+<section id="pattern-1-start-and-stop">
+<h2>Pattern 1: Start and Stop<a class="headerlink" href="#pattern-1-start-and-stop" title="Link to this heading">¶</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jiuwenclaw.channel.web_channel</span><span class="w"> </span><span class="kn">import</span> <span class="n">WebChannel</span><span class="p">,</span> <span class="n">WebChannelConfig</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">WebChannelConfig</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">19000</span><span class="p">)</span>
+    <span class="n">channel</span> <span class="o">=</span> <span class="n">WebChannel</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+    <span class="k">await</span> <span class="n">channel</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Server is running — do work here</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">60</span><span class="p">)</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">channel</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+
+<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
 </pre></div>
 </div>
 </section>
-<section id="create-your-first-message">
-<h2>Create Your First Message<a class="headerlink" href="#create-your-first-message" title="Link to this heading">¶</a></h2>
-<p>A <strong>request</strong> is what a client sends to ask the agent to do something:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">jiuwenclaw.schema.message</span><span class="w"> </span><span class="kn">import</span> <span class="n">Message</span><span class="p">,</span> <span class="n">ReqMethod</span>
+<section id="pattern-2-register-with-channelmanager">
+<h2>Pattern 2: Register with ChannelManager<a class="headerlink" href="#pattern-2-register-with-channelmanager" title="Link to this heading">¶</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">jiuwenclaw.gateway.channel_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelManager</span>
 
-<span class="n">msg</span> <span class="o">=</span> <span class="n">Message</span><span class="o">.</span><span class="n">new_req</span><span class="p">(</span>
-    <span class="n">ReqMethod</span><span class="o">.</span><span class="n">CHAT_SEND</span><span class="p">,</span>
-    <span class="n">channel_id</span><span class="o">=</span><span class="s2">&quot;web&quot;</span><span class="p">,</span>
-    <span class="n">session_id</span><span class="o">=</span><span class="s2">&quot;sess-001&quot;</span><span class="p">,</span>
-    <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="s2">&quot;What is the capital of France?&quot;</span><span class="p">},</span>
+<span class="n">manager</span> <span class="o">=</span> <span class="n">ChannelManager</span><span class="p">()</span>
+
+<span class="n">web</span> <span class="o">=</span> <span class="n">WebChannel</span><span class="p">(</span><span class="n">WebChannelConfig</span><span class="p">(</span><span class="n">port</span><span class="o">=</span><span class="mi">19000</span><span class="p">))</span>
+<span class="n">manager</span><span class="o">.</span><span class="n">register_channel</span><span class="p">(</span><span class="n">web</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">web</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+<span class="c1"># Later, check registered channels</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">manager</span><span class="o">.</span><span class="n">list_channels</span><span class="p">())</span>  <span class="c1"># [&#39;web&#39;]</span>
+
+<span class="c1"># Deliver a message to all web clients</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jiuwenclaw.schema.message</span><span class="w"> </span><span class="kn">import</span> <span class="n">Message</span><span class="p">,</span> <span class="n">EventType</span>
+<span class="n">msg</span> <span class="o">=</span> <span class="n">Message</span><span class="o">.</span><span class="n">new_event</span><span class="p">(</span>
+    <span class="n">EventType</span><span class="o">.</span><span class="n">CHAT_FINAL</span><span class="p">,</span>
+    <span class="n">payload</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;Hello everyone!&quot;</span><span class="p">},</span>
 <span class="p">)</span>
+<span class="k">await</span> <span class="n">manager</span><span class="o">.</span><span class="n">send_to_channel</span><span class="p">(</span><span class="s2">&quot;web&quot;</span><span class="p">,</span> <span class="n">msg</span><span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">to_json</span><span class="p">())</span>
-<span class="c1"># {&quot;id&quot;: &quot;a1b2c3d4e5f6&quot;, &quot;type&quot;: &quot;req&quot;, &quot;method&quot;: &quot;chat.send&quot;, ...}</span>
-</pre></div>
-</div>
-<p>A <strong>response</strong> is what the agent sends back:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">res</span> <span class="o">=</span> <span class="n">Message</span><span class="o">.</span><span class="n">new_res</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">payload</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="s2">&quot;Paris&quot;</span><span class="p">})</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">to_json</span><span class="p">())</span>
-<span class="c1"># {&quot;id&quot;: &quot;a1b2c3d4e5f6&quot;, &quot;type&quot;: &quot;res&quot;, &quot;ok&quot;: true, &quot;payload&quot;: {&quot;answer&quot;: &quot;Paris&quot;}}</span>
-</pre></div>
-</div>
-<p>An <strong>event</strong> is what the agent pushes during processing:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">jiuwenclaw.schema.message</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventType</span>
-
-<span class="n">event</span> <span class="o">=</span> <span class="n">Message</span><span class="o">.</span><span class="n">new_event</span><span class="p">(</span>
-    <span class="n">EventType</span><span class="o">.</span><span class="n">CHAT_DELTA</span><span class="p">,</span>
-    <span class="n">payload</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;The capital is &quot;</span><span class="p">},</span>
-<span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">to_json</span><span class="p">())</span>
-<span class="c1"># {&quot;type&quot;: &quot;event&quot;, &quot;event&quot;: &quot;chat.delta&quot;, &quot;payload&quot;: {&quot;content&quot;: &quot;The capital is &quot;}}</span>
+<span class="k">await</span> <span class="n">web</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+<span class="n">manager</span><span class="o">.</span><span class="n">unregister_channel</span><span class="p">(</span><span class="s2">&quot;web&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
-<section id="parse-incoming-messages">
-<h2>Parse Incoming Messages<a class="headerlink" href="#parse-incoming-messages" title="Link to this heading">¶</a></h2>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">raw</span> <span class="o">=</span> <span class="s1">&#39;{&quot;type&quot;: &quot;req&quot;, &quot;id&quot;: &quot;abc&quot;, &quot;method&quot;: &quot;chat.send&quot;, &quot;params&quot;: {&quot;query&quot;: &quot;Hi&quot;}}&#39;</span>
-<span class="n">msg</span> <span class="o">=</span> <span class="n">Message</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">req_method</span><span class="p">)</span>   <span class="c1"># ReqMethod.CHAT_SEND</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>       <span class="c1"># {&quot;query&quot;: &quot;Hi&quot;}</span>
+<section id="pattern-3-wire-format-reference">
+<h2>Pattern 3: Wire Format Reference<a class="headerlink" href="#pattern-3-wire-format-reference" title="Link to this heading">¶</a></h2>
+<p>Request (client → server):</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;req&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;req-abc123&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;chat.send&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;channel_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;web&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;session_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sess-xyz&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;query&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;What is the capital of France?&quot;</span><span class="p">}</span>
+<span class="p">}</span>
 </pre></div>
 </div>
-</section>
-<section id="next-steps">
-<h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading">¶</a></h2>
-<ul class="simple">
-<li><p>See <a class="reference internal" href="../examples/message-example.html"><span class="doc">Message Usage Patterns</span></a> for practical patterns.</p></li>
-</ul>
+<p>Response (server → client):</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;res&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;req-abc123&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;ok&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;payload&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;echo&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;What is the capital of France?&quot;</span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Event (server → client):</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;event&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;event&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;connection.ack&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;payload&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;protocol_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1.0&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;transport&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;web&quot;</span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
 </section>
 </section>
 
@@ -300,23 +320,15 @@ and deserialize messages.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="web-channel.html">
-              <div class="page-info">
-                <div class="context">
-                  <span>Next</span>
-                </div>
-                <div class="title">Using the Web Channel</div>
-              </div>
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-            </a>
-          <a class="prev-page" href="../../index.html">
+          
+          <a class="prev-page" href="message-example.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Home</div>
+                <div class="title">Message Usage Patterns</div>
                 
               </div>
             </a>
@@ -350,11 +362,10 @@ and deserialize messages.</p>
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">Getting Started with Messages</a><ul>
-<li><a class="reference internal" href="#install">Install</a></li>
-<li><a class="reference internal" href="#create-your-first-message">Create Your First Message</a></li>
-<li><a class="reference internal" href="#parse-incoming-messages">Parse Incoming Messages</a></li>
-<li><a class="reference internal" href="#next-steps">Next Steps</a></li>
+<li><a class="reference internal" href="#">Channel Usage Patterns</a><ul>
+<li><a class="reference internal" href="#pattern-1-start-and-stop">Pattern 1: Start and Stop</a></li>
+<li><a class="reference internal" href="#pattern-2-register-with-channelmanager">Pattern 2: Register with ChannelManager</a></li>
+<li><a class="reference internal" href="#pattern-3-wire-format-reference">Pattern 3: Wire Format Reference</a></li>
 </ul>
 </li>
 </ul>

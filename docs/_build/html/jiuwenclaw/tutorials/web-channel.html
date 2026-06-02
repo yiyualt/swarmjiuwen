@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Using the Web Channel" href="web-channel.html"><link rel="prev" title="JiuwenClaw Documentation" href="../../index.html">
+<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Message Usage Patterns" href="../examples/message-example.html"><link rel="prev" title="Getting Started with Messages" href="getting-started.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Getting Started with Messages - JiuwenClaw documentation</title>
+        <title>Using the Web Channel - JiuwenClaw documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -191,8 +191,8 @@
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <ul class="current">
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Getting Started with Messages</a></li>
-<li class="toctree-l1"><a class="reference internal" href="web-channel.html">Using the Web Channel</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting Started with Messages</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Using the Web Channel</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../examples/message-example.html">Message Usage Patterns</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../examples/channel-example.html">Channel Usage Patterns</a></li>
 </ul>
@@ -215,7 +215,7 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="../../_sources/jiuwenclaw/tutorials/getting-started.rst.txt" title="View this page">
+  <a class="muted-link" href="../../_sources/jiuwenclaw/tutorials/web-channel.rst.txt" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
@@ -233,64 +233,94 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="getting-started-with-messages">
-<h1>Getting Started with Messages<a class="headerlink" href="#getting-started-with-messages" title="Link to this heading">¶</a></h1>
-<p>The Message is the universal envelope that every JiuwenClaw component
-uses to communicate. This tutorial shows you how to create, serialize,
-and deserialize messages.</p>
-<section id="install">
-<h2>Install<a class="headerlink" href="#install" title="Link to this heading">¶</a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+          <section id="using-the-web-channel">
+<h1>Using the Web Channel<a class="headerlink" href="#using-the-web-channel" title="Link to this heading">¶</a></h1>
+<p>The WebChannel lets browsers talk to JiuwenClaw over WebSocket. This
+tutorial shows how to start the channel and test it.</p>
+<section id="start-the-webchannel">
+<h2>Start the WebChannel<a class="headerlink" href="#start-the-webchannel" title="Link to this heading">¶</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jiuwenclaw.channel.web_channel</span><span class="w"> </span><span class="kn">import</span> <span class="n">WebChannel</span><span class="p">,</span> <span class="n">WebChannelConfig</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">WebChannelConfig</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">19000</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="s2">&quot;/ws&quot;</span><span class="p">)</span>
+    <span class="n">channel</span> <span class="o">=</span> <span class="n">WebChannel</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">channel</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;WebChannel running on ws://127.0.0.1:19000/ws&quot;</span><span class="p">)</span>
+    <span class="c1"># Keep running until Ctrl+C</span>
+    <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+
+<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
 </pre></div>
 </div>
 </section>
-<section id="create-your-first-message">
-<h2>Create Your First Message<a class="headerlink" href="#create-your-first-message" title="Link to this heading">¶</a></h2>
-<p>A <strong>request</strong> is what a client sends to ask the agent to do something:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">jiuwenclaw.schema.message</span><span class="w"> </span><span class="kn">import</span> <span class="n">Message</span><span class="p">,</span> <span class="n">ReqMethod</span>
+<section id="connect-from-browser">
+<h2>Connect from Browser<a class="headerlink" href="#connect-from-browser" title="Link to this heading">¶</a></h2>
+<p>Open <code class="docutils literal notranslate"><span class="pre">http://127.0.0.1:19000</span></code> (or any page) and use the browser console:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="kd">const</span><span class="w"> </span><span class="nx">ws</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">WebSocket</span><span class="p">(</span><span class="s2">&quot;ws://127.0.0.1:19000/ws&quot;</span><span class="p">);</span>
 
-<span class="n">msg</span> <span class="o">=</span> <span class="n">Message</span><span class="o">.</span><span class="n">new_req</span><span class="p">(</span>
-    <span class="n">ReqMethod</span><span class="o">.</span><span class="n">CHAT_SEND</span><span class="p">,</span>
-    <span class="n">channel_id</span><span class="o">=</span><span class="s2">&quot;web&quot;</span><span class="p">,</span>
-    <span class="n">session_id</span><span class="o">=</span><span class="s2">&quot;sess-001&quot;</span><span class="p">,</span>
-    <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="s2">&quot;What is the capital of France?&quot;</span><span class="p">},</span>
-<span class="p">)</span>
+<span class="nx">ws</span><span class="p">.</span><span class="nx">onmessage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="nx">e</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;Received:&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">JSON</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">data</span><span class="p">));</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">to_json</span><span class="p">())</span>
-<span class="c1"># {&quot;id&quot;: &quot;a1b2c3d4e5f6&quot;, &quot;type&quot;: &quot;req&quot;, &quot;method&quot;: &quot;chat.send&quot;, ...}</span>
-</pre></div>
-</div>
-<p>A <strong>response</strong> is what the agent sends back:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">res</span> <span class="o">=</span> <span class="n">Message</span><span class="o">.</span><span class="n">new_res</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">payload</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="s2">&quot;Paris&quot;</span><span class="p">})</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">to_json</span><span class="p">())</span>
-<span class="c1"># {&quot;id&quot;: &quot;a1b2c3d4e5f6&quot;, &quot;type&quot;: &quot;res&quot;, &quot;ok&quot;: true, &quot;payload&quot;: {&quot;answer&quot;: &quot;Paris&quot;}}</span>
-</pre></div>
-</div>
-<p>An <strong>event</strong> is what the agent pushes during processing:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">jiuwenclaw.schema.message</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventType</span>
+<span class="nx">ws</span><span class="p">.</span><span class="nx">onopen</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">ws</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="nb">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">({</span>
+<span class="w">        </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;req&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;abc123&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">method</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;chat.send&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">params</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">query</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Hello, world!&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}));</span>
+<span class="p">};</span>
 
-<span class="n">event</span> <span class="o">=</span> <span class="n">Message</span><span class="o">.</span><span class="n">new_event</span><span class="p">(</span>
-    <span class="n">EventType</span><span class="o">.</span><span class="n">CHAT_DELTA</span><span class="p">,</span>
-    <span class="n">payload</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;The capital is &quot;</span><span class="p">},</span>
-<span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">to_json</span><span class="p">())</span>
-<span class="c1"># {&quot;type&quot;: &quot;event&quot;, &quot;event&quot;: &quot;chat.delta&quot;, &quot;payload&quot;: {&quot;content&quot;: &quot;The capital is &quot;}}</span>
+<span class="c1">// Received: {&quot;type&quot;:&quot;event&quot;,&quot;event&quot;:&quot;connection.ack&quot;,...}</span>
+<span class="c1">// Received: {&quot;type&quot;:&quot;res&quot;,&quot;id&quot;:&quot;abc123&quot;,&quot;ok&quot;:true,&quot;payload&quot;:{&quot;echo&quot;:&quot;Hello, world!&quot;}}</span>
 </pre></div>
 </div>
 </section>
-<section id="parse-incoming-messages">
-<h2>Parse Incoming Messages<a class="headerlink" href="#parse-incoming-messages" title="Link to this heading">¶</a></h2>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">raw</span> <span class="o">=</span> <span class="s1">&#39;{&quot;type&quot;: &quot;req&quot;, &quot;id&quot;: &quot;abc&quot;, &quot;method&quot;: &quot;chat.send&quot;, &quot;params&quot;: {&quot;query&quot;: &quot;Hi&quot;}}&#39;</span>
-<span class="n">msg</span> <span class="o">=</span> <span class="n">Message</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">req_method</span><span class="p">)</span>   <span class="c1"># ReqMethod.CHAT_SEND</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>       <span class="c1"># {&quot;query&quot;: &quot;Hi&quot;}</span>
+<section id="connect-from-python">
+<h2>Connect from Python<a class="headerlink" href="#connect-from-python" title="Link to this heading">¶</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">websockets.asyncio.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">connect</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test</span><span class="p">():</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">connect</span><span class="p">(</span><span class="s2">&quot;ws://127.0.0.1:19000/ws&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">ws</span><span class="p">:</span>
+        <span class="c1"># Read the connection ack</span>
+        <span class="n">ack</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="k">await</span> <span class="n">ws</span><span class="o">.</span><span class="n">recv</span><span class="p">())</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ack:&quot;</span><span class="p">,</span> <span class="n">ack</span><span class="p">[</span><span class="s2">&quot;event&quot;</span><span class="p">])</span>  <span class="c1"># connection.ack</span>
+
+        <span class="c1"># Send a request</span>
+        <span class="k">await</span> <span class="n">ws</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;req&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;abc&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;chat.send&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="s2">&quot;Hello!&quot;</span><span class="p">},</span>
+        <span class="p">}))</span>
+
+        <span class="c1"># Read the echo response</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="k">await</span> <span class="n">ws</span><span class="o">.</span><span class="n">recv</span><span class="p">())</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Response:&quot;</span><span class="p">,</span> <span class="n">res</span><span class="p">[</span><span class="s2">&quot;payload&quot;</span><span class="p">][</span><span class="s2">&quot;echo&quot;</span><span class="p">])</span>  <span class="c1"># Hello!</span>
+
+<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">test</span><span class="p">())</span>
+</pre></div>
+</div>
+</section>
+<section id="what-s-happening">
+<h2>What’s Happening<a class="headerlink" href="#what-s-happening" title="Link to this heading">¶</a></h2>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Client                    WebChannel
+   │                          │
+   │── {&quot;type&quot;:&quot;req&quot;, ...} ──►│  JSON → Message
+   │                          │
+   │◄─ {&quot;type&quot;:&quot;event&quot;,       │  Connection ack
+   │    &quot;event&quot;:&quot;connection.ack&quot;} ──│
+   │                          │
+   │◄─ {&quot;type&quot;:&quot;res&quot;,         │  Echo (no agent yet)
+   │    &quot;payload&quot;:{&quot;echo&quot;:&quot;Hello!&quot;}} ──│
 </pre></div>
 </div>
 </section>
 <section id="next-steps">
 <h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading">¶</a></h2>
 <ul class="simple">
-<li><p>See <a class="reference internal" href="../examples/message-example.html"><span class="doc">Message Usage Patterns</span></a> for practical patterns.</p></li>
+<li><p>See <a class="reference internal" href="../examples/channel-example.html"><span class="doc">Channel Usage Patterns</span></a> for more patterns.</p></li>
 </ul>
 </section>
 </section>
@@ -300,23 +330,23 @@ and deserialize messages.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="web-channel.html">
+          <a class="next-page" href="../examples/message-example.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Using the Web Channel</div>
+                <div class="title">Message Usage Patterns</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="../../index.html">
+          <a class="prev-page" href="getting-started.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Home</div>
+                <div class="title">Getting Started with Messages</div>
                 
               </div>
             </a>
@@ -350,10 +380,11 @@ and deserialize messages.</p>
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">Getting Started with Messages</a><ul>
-<li><a class="reference internal" href="#install">Install</a></li>
-<li><a class="reference internal" href="#create-your-first-message">Create Your First Message</a></li>
-<li><a class="reference internal" href="#parse-incoming-messages">Parse Incoming Messages</a></li>
+<li><a class="reference internal" href="#">Using the Web Channel</a><ul>
+<li><a class="reference internal" href="#start-the-webchannel">Start the WebChannel</a></li>
+<li><a class="reference internal" href="#connect-from-browser">Connect from Browser</a></li>
+<li><a class="reference internal" href="#connect-from-python">Connect from Python</a></li>
+<li><a class="reference internal" href="#what-s-happening">What’s Happening</a></li>
 <li><a class="reference internal" href="#next-steps">Next Steps</a></li>
 </ul>
 </li>
