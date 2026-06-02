@@ -6,3 +6,4 @@ JiuwenClaw Documentation
 
    jiuwenclaw/tutorials/getting-started
    jiuwenclaw/tutorials/web-channel
+   jiuwenclaw/tutorials/configuring-models

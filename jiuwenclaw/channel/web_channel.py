@@ -26,6 +26,19 @@ class WebChannelConfig:
     port: int = 19000
     path: str = "/ws"
 
+    @classmethod
+    def from_config(cls) -> WebChannelConfig:
+        """Create config from the JiuwenClaw config system."""
+        from jiuwenclaw.config import get_config
+        cfg = get_config()
+        web = cfg.get("channels", {}).get("web", {})
+        return cls(
+            enabled=bool(web.get("enabled", True)),
+            host=str(web.get("host", "127.0.0.1")),
+            port=int(web.get("port", 19000)),
+            path=str(web.get("path", "/ws")),
+        )
+
 
 class WebChannel(ChannelBase):
     """Web channel for browser access over WebSocket."""
