@@ -6,5 +6,3 @@ JiuwenClaw Documentation
 
    jiuwenclaw/tutorials/getting-started
    jiuwenclaw/tutorials/web-channel
-   jiuwenclaw/examples/message-example
-   jiuwenclaw/examples/channel-example

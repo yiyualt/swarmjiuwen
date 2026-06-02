@@ -65,4 +65,4 @@ Parse Incoming Messages
 Next Steps
 ----------
 
-- See :doc:`/jiuwenclaw/examples/message-example` for practical patterns.
+- Continue to :doc:`/jiuwenclaw/tutorials/web-channel` to make messages flow over WebSocket.

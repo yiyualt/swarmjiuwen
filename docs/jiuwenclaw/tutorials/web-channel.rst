@@ -92,4 +92,4 @@ What's Happening
 Next Steps
 ----------
 
-- See :doc:`/jiuwenclaw/examples/channel-example` for more patterns.
+- Return to :doc:`/jiuwenclaw/tutorials/getting-started` for Message basics.
