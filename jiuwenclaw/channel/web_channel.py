@@ -1,7 +1,7 @@
 """WebChannel — WebSocket server for browser access.
 
-Translates JSON frames ↔ Message objects. Currently echoes messages back
-since there's no agent yet.
+Translates JSON frames ↔ Message objects. Connects to AgentServer
+via AgentClient for LLM processing.
 """
 
 from __future__ import annotations
@@ -12,8 +12,8 @@ from dataclasses import dataclass
 from typing import Any
 
 from jiuwenclaw.channel.base import ChannelBase
+from jiuwenclaw.gateway.agent_client import AgentClient
 from jiuwenclaw.schema.message import EventType, Message
-from jiuwenclaw.agentserver.agent import Agent
 
 _logger = logging.getLogger(__name__)
 
@@ -50,17 +50,13 @@ class WebChannel(ChannelBase):
         self.config = config or WebChannelConfig()
         self._server: Any = None
         self._clients: set[Any] = set()
-        self._agent: Agent | None = None
-
-    @property
-    def agent(self) -> Agent:
-        if self._agent is None:
-            self._agent = Agent()
-        return self._agent
+        self._agent = AgentClient()
 
     async def start(self) -> None:
-        """Start the WebSocket server."""
+        """Start the WebSocket server and connect to AgentServer."""
         from websockets.asyncio.server import serve
+
+        await self._agent.connect()
 
         self._server = await serve(
             self._handle_connection,
@@ -73,10 +69,11 @@ class WebChannel(ChannelBase):
         )
 
     async def stop(self) -> None:
-        """Stop the WebSocket server."""
+        """Stop the WebSocket server and disconnect from AgentServer."""
         for client in list(self._clients):
             await client.close()
         self._clients.clear()
+        await self._agent.disconnect()
         if self._server:
             self._server.close()
             await self._server.wait_closed()
@@ -140,7 +137,7 @@ class WebChannel(ChannelBase):
             return
 
         try:
-            answer = await self.agent.chat(query)
+            answer = await self._agent.chat(query, msg.session_id)
 
             # Send final event
             final = Message.new_event(

@@ -10,3 +10,4 @@ JiuwenClaw Documentation
    jiuwenclaw/tutorials/first-chat
    jiuwenclaw/tutorials/memory
    jiuwenclaw/tutorials/tools
+   jiuwenclaw/tutorials/architecture

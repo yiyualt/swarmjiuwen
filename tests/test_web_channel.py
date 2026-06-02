@@ -13,18 +13,22 @@ from jiuwenclaw.schema.message import Message, ReqMethod
 TEST_PORT = 19001
 
 
-class MockAgent:
-    """Stand-in for Agent that doesn't need openjiuwen."""
-    async def chat(self, query: str) -> str:
+class MockAgentClient:
+    """Stand-in for AgentClient that doesn't need a real AgentServer."""
+    async def connect(self) -> None:
+        pass
+    async def disconnect(self) -> None:
+        pass
+    async def chat(self, query: str, session_id: str = "") -> str:
         return f"You asked: {query}"
 
 
 @pytest.fixture
 async def web_channel():
-    """Start a WebChannel with a mock Agent on a test port."""
+    """Start a WebChannel with a mock AgentClient on a test port."""
     config = WebChannelConfig(host="127.0.0.1", port=TEST_PORT, path="/ws")
     channel = WebChannel(config)
-    channel._agent = MockAgent()  # inject mock before start
+    channel._agent = MockAgentClient()  # inject mock before start
     task = asyncio.create_task(channel.start())
     await asyncio.sleep(0.1)
     yield channel
