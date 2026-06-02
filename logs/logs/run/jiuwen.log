@@ -76,3 +76,88 @@
 2026-06-03 03:13:24 | common | default_trace_id | INFO | Registered parser ImageParser for .jfif
 2026-06-03 03:24:18 | common | default_trace_id | INFO | Registered connector pool type: default
 2026-06-03 03:24:18 | common | default_trace_id | INFO | Registered connector pool type: httpx
+2026-06-03 03:38:25 | common | default_trace_id | INFO | Registered connector pool type: default
+2026-06-03 03:38:25 | common | default_trace_id | INFO | Registered connector pool type: httpx
+2026-06-03 03:38:25 | common | default_trace_id | INFO | Registered query expression support for milvus
+2026-06-03 03:38:25 | common | default_trace_id | INFO | Registered query expression support for chroma
+2026-06-03 03:38:25 | common | default_trace_id | INFO | Registered parser ExcelParser for .xlsx
+2026-06-03 03:38:25 | common | default_trace_id | INFO | Registered parser ExcelParser for .csv
+2026-06-03 03:38:25 | common | default_trace_id | INFO | Registered parser ExcelParser for .tsv
+2026-06-03 03:38:25 | common | default_trace_id | INFO | Registered parser JSONParser for .json
+2026-06-03 03:38:25 | common | default_trace_id | INFO | Registered parser PDFParser for .pdf
+2026-06-03 03:38:25 | common | default_trace_id | INFO | Registered parser TxtMdParser for .txt
+2026-06-03 03:38:25 | common | default_trace_id | INFO | Registered parser TxtMdParser for .md
+2026-06-03 03:38:25 | common | default_trace_id | INFO | Registered parser TxtMdParser for .markdown
+2026-06-03 03:38:25 | common | default_trace_id | INFO | Registered parser WordParser for .docx
+2026-06-03 03:38:25 | common | default_trace_id | INFO | Registered parser ImageParser for .png
+2026-06-03 03:38:25 | common | default_trace_id | INFO | Registered parser ImageParser for .jpg
+2026-06-03 03:38:25 | common | default_trace_id | INFO | Registered parser ImageParser for .jpeg
+2026-06-03 03:38:25 | common | default_trace_id | INFO | Registered parser ImageParser for .webp
+2026-06-03 03:38:25 | common | default_trace_id | INFO | Registered parser ImageParser for .gif
+2026-06-03 03:38:25 | common | default_trace_id | INFO | Registered parser ImageParser for .jfif
+2026-06-03 03:38:56 | common | default_trace_id | INFO | Registered connector pool type: default
+2026-06-03 03:38:57 | common | default_trace_id | INFO | Registered connector pool type: httpx
+2026-06-03 03:38:58 | common | default_trace_id | INFO | Registered query expression support for milvus
+2026-06-03 03:38:58 | common | default_trace_id | INFO | Registered query expression support for chroma
+2026-06-03 03:38:58 | common | default_trace_id | INFO | Registered parser ExcelParser for .xlsx
+2026-06-03 03:38:58 | common | default_trace_id | INFO | Registered parser ExcelParser for .csv
+2026-06-03 03:38:58 | common | default_trace_id | INFO | Registered parser ExcelParser for .tsv
+2026-06-03 03:38:58 | common | default_trace_id | INFO | Registered parser JSONParser for .json
+2026-06-03 03:38:58 | common | default_trace_id | INFO | Registered parser PDFParser for .pdf
+2026-06-03 03:38:58 | common | default_trace_id | INFO | Registered parser TxtMdParser for .txt
+2026-06-03 03:38:58 | common | default_trace_id | INFO | Registered parser TxtMdParser for .md
+2026-06-03 03:38:58 | common | default_trace_id | INFO | Registered parser TxtMdParser for .markdown
+2026-06-03 03:38:58 | common | default_trace_id | INFO | Registered parser WordParser for .docx
+2026-06-03 03:38:58 | common | default_trace_id | INFO | Registered parser ImageParser for .png
+2026-06-03 03:38:58 | common | default_trace_id | INFO | Registered parser ImageParser for .jpg
+2026-06-03 03:38:58 | common | default_trace_id | INFO | Registered parser ImageParser for .jpeg
+2026-06-03 03:38:58 | common | default_trace_id | INFO | Registered parser ImageParser for .webp
+2026-06-03 03:38:58 | common | default_trace_id | INFO | Registered parser ImageParser for .gif
+2026-06-03 03:38:58 | common | default_trace_id | INFO | Registered parser ImageParser for .jfif
+2026-06-03 03:39:02 | common | default_trace_id | INFO | ReAct iteration 1/100
+2026-06-03 03:39:02 | common | default_trace_id | INFO | [LLM] context_for_model session_id=default_session context_id=default_context_id message_count=2 tool_count=0 total_content_chars=15 active_skill_pin_messages=0
+2026-06-03 03:39:02 | common | default_trace_id | INFO | [LLM] >>> request: msg_count=2, tool_count=0
+2026-06-03 03:39:59 | common | default_trace_id | INFO | Registered connector pool type: default
+2026-06-03 03:39:59 | common | default_trace_id | INFO | Registered connector pool type: httpx
+2026-06-03 03:40:00 | common | default_trace_id | INFO | Registered query expression support for milvus
+2026-06-03 03:40:00 | common | default_trace_id | INFO | Registered query expression support for chroma
+2026-06-03 03:40:00 | common | default_trace_id | INFO | Registered parser ExcelParser for .xlsx
+2026-06-03 03:40:00 | common | default_trace_id | INFO | Registered parser ExcelParser for .csv
+2026-06-03 03:40:00 | common | default_trace_id | INFO | Registered parser ExcelParser for .tsv
+2026-06-03 03:40:00 | common | default_trace_id | INFO | Registered parser JSONParser for .json
+2026-06-03 03:40:00 | common | default_trace_id | INFO | Registered parser PDFParser for .pdf
+2026-06-03 03:40:00 | common | default_trace_id | INFO | Registered parser TxtMdParser for .txt
+2026-06-03 03:40:00 | common | default_trace_id | INFO | Registered parser TxtMdParser for .md
+2026-06-03 03:40:00 | common | default_trace_id | INFO | Registered parser TxtMdParser for .markdown
+2026-06-03 03:40:00 | common | default_trace_id | INFO | Registered parser WordParser for .docx
+2026-06-03 03:40:00 | common | default_trace_id | INFO | Registered parser ImageParser for .png
+2026-06-03 03:40:00 | common | default_trace_id | INFO | Registered parser ImageParser for .jpg
+2026-06-03 03:40:00 | common | default_trace_id | INFO | Registered parser ImageParser for .jpeg
+2026-06-03 03:40:00 | common | default_trace_id | INFO | Registered parser ImageParser for .webp
+2026-06-03 03:40:00 | common | default_trace_id | INFO | Registered parser ImageParser for .gif
+2026-06-03 03:40:00 | common | default_trace_id | INFO | Registered parser ImageParser for .jfif
+2026-06-03 03:40:20 | common | default_trace_id | INFO | Registered connector pool type: default
+2026-06-03 03:40:21 | common | default_trace_id | INFO | Registered connector pool type: httpx
+2026-06-03 03:40:21 | common | default_trace_id | INFO | Registered query expression support for milvus
+2026-06-03 03:40:21 | common | default_trace_id | INFO | Registered query expression support for chroma
+2026-06-03 03:40:21 | common | default_trace_id | INFO | Registered parser ExcelParser for .xlsx
+2026-06-03 03:40:21 | common | default_trace_id | INFO | Registered parser ExcelParser for .csv
+2026-06-03 03:40:21 | common | default_trace_id | INFO | Registered parser ExcelParser for .tsv
+2026-06-03 03:40:22 | common | default_trace_id | INFO | Registered parser JSONParser for .json
+2026-06-03 03:40:22 | common | default_trace_id | INFO | Registered parser PDFParser for .pdf
+2026-06-03 03:40:22 | common | default_trace_id | INFO | Registered parser TxtMdParser for .txt
+2026-06-03 03:40:22 | common | default_trace_id | INFO | Registered parser TxtMdParser for .md
+2026-06-03 03:40:22 | common | default_trace_id | INFO | Registered parser TxtMdParser for .markdown
+2026-06-03 03:40:22 | common | default_trace_id | INFO | Registered parser WordParser for .docx
+2026-06-03 03:40:22 | common | default_trace_id | INFO | Registered parser ImageParser for .png
+2026-06-03 03:40:22 | common | default_trace_id | INFO | Registered parser ImageParser for .jpg
+2026-06-03 03:40:22 | common | default_trace_id | INFO | Registered parser ImageParser for .jpeg
+2026-06-03 03:40:22 | common | default_trace_id | INFO | Registered parser ImageParser for .webp
+2026-06-03 03:40:22 | common | default_trace_id | INFO | Registered parser ImageParser for .gif
+2026-06-03 03:40:22 | common | default_trace_id | INFO | Registered parser ImageParser for .jfif
+2026-06-03 03:40:25 | common | default_trace_id | INFO | ReAct iteration 1/100
+2026-06-03 03:40:25 | common | default_trace_id | INFO | [LLM] context_for_model session_id=default_session context_id=default_context_id message_count=2 tool_count=0 total_content_chars=15 active_skill_pin_messages=0
+2026-06-03 03:40:25 | common | default_trace_id | INFO | [LLM] >>> request: msg_count=2, tool_count=0
+2026-06-03 03:40:55 | common | default_trace_id | INFO | [LLM] <<< response: content_len=3669, tool_call_count=0, tokens={input=10, output=1648}
+2026-06-03 03:47:45 | common | default_trace_id | INFO | Registered connector pool type: default
+2026-06-03 03:47:45 | common | default_trace_id | INFO | Registered connector pool type: httpx
