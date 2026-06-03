@@ -12,7 +12,9 @@ from dataclasses import dataclass
 from typing import Any
 
 from jiuwenclaw.channel.base import ChannelBase
+from jiuwenclaw.config import get_config
 from jiuwenclaw.gateway.agent_client import AgentClient
+from jiuwenclaw.gateway.heartbeat import GatewayHeartbeatService, HeartbeatConfig
 from jiuwenclaw.schema.message import EventType, Message
 
 _logger = logging.getLogger(__name__)
@@ -51,12 +53,29 @@ class WebChannel(ChannelBase):
         self._server: Any = None
         self._clients: set[Any] = set()
         self._agent = AgentClient()
+        self._heartbeat: GatewayHeartbeatService | None = None
 
     async def start(self) -> None:
-        """Start the WebSocket server and connect to AgentServer."""
+        """Start the WebSocket server, connect to AgentServer, start heartbeat."""
         from websockets.asyncio.server import serve
 
         await self._agent.connect()
+
+        # Heartbeat
+        try:
+            hb_cfg = get_config().get("heartbeat", {})
+            if isinstance(hb_cfg, dict) and hb_cfg.get("enabled"):
+                self._heartbeat = GatewayHeartbeatService(
+                    self._agent,
+                    HeartbeatConfig(
+                        enabled=True,
+                        interval_seconds=float(hb_cfg.get("every", 60)),
+                        task=str(hb_cfg.get("task", "Check pending items.")),
+                    ),
+                )
+                await self._heartbeat.start()
+        except Exception:
+            _logger.debug("[WebChannel] heartbeat init skipped", exc_info=True)
 
         self._server = await serve(
             self._handle_connection,
@@ -69,7 +88,9 @@ class WebChannel(ChannelBase):
         )
 
     async def stop(self) -> None:
-        """Stop the WebSocket server and disconnect from AgentServer."""
+        """Stop the WebSocket server, heartbeat, and disconnect."""
+        if self._heartbeat:
+            await self._heartbeat.stop()
         for client in list(self._clients):
             await client.close()
         self._clients.clear()

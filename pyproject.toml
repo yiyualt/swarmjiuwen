@@ -17,6 +17,10 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=9.0.0"]
 
+[project.scripts]
+jiuwenclaw-start = "jiuwenclaw.start_services:main"
+jiuwenclaw-agentserver = "jiuwenclaw.app_agentserver:main"
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["jiuwenclaw*"]

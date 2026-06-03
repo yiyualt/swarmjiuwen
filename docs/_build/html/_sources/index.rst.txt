@@ -12,3 +12,4 @@ JiuwenClaw Documentation
    jiuwenclaw/tutorials/tools
    jiuwenclaw/tutorials/architecture
    jiuwenclaw/tutorials/session
+   jiuwenclaw/tutorials/heartbeat

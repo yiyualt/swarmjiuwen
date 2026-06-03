@@ -23,5 +23,10 @@ models:
 react:
   window_round_num: 100
 
+heartbeat:
+  enabled: false
+  every: 60
+  task: "Check for pending items and report status."
+
 logging:
   level: INFO
