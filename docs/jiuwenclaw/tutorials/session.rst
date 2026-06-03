@@ -63,6 +63,7 @@ Session Lifecycle
 - **Active**: Session receives messages, history grows
 - **Idle**: No messages for >1 hour → history evicted from memory
 - **Max 50 sessions**: Oldest idle session evicted when limit reached
+- **Persistent**: History saved to ``sessions/<session_id>/history.json`` — survives restarts
 
 Next Steps
 ----------

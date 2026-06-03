@@ -62,6 +62,8 @@ class Agent:
         self._last_access: dict[str, float] = {}
         self._max_sessions = 50
         self._session_timeout = 3600  # 1 hour
+        self._sessions_dir = self.workspace_dir.parent / "sessions"
+        self._sessions_dir.mkdir(parents=True, exist_ok=True)
 
     @property
     def memory(self) -> MemoryManager:
@@ -102,21 +104,53 @@ class Agent:
             parts.append(f"Memory (what you know about the user):\n{self._memory_context}")
         return "\n\n".join(parts)
 
+    def _load_history(self, session_id: str) -> list:
+        """Load session history from disk."""
+        path = self._sessions_dir / session_id / "history.json"
+        if path.exists():
+            try:
+                return json.loads(path.read_text())
+            except (json.JSONDecodeError, OSError):
+                pass
+        return []
+
+    def _save_history(self, session_id: str) -> None:
+        """Save session history to disk."""
+        if not session_id:
+            return
+        history = self._history.get(session_id, [])
+        if not history:
+            return
+        session_dir = self._sessions_dir / session_id
+        session_dir.mkdir(parents=True, exist_ok=True)
+        (session_dir / "history.json").write_text(json.dumps(history, ensure_ascii=False, indent=2))
+
     def _get_history(self, session_id: str) -> list:
-        """Get history, evicting idle sessions if needed."""
+        """Get history, loading from disk if needed, evicting idle sessions."""
         now = time.time()
         # Evict idle sessions
         stale = [s for s, t in self._last_access.items() if now - t > self._session_timeout]
         for s in stale:
             self._history.pop(s, None)
             self._last_access.pop(s, None)
+            # Clean up disk
+            session_dir = self._sessions_dir / s
+            if session_dir.exists():
+                import shutil
+                shutil.rmtree(session_dir, ignore_errors=True)
         # LRU eviction if over capacity
         while len(self._history) >= self._max_sessions:
             oldest = min(self._last_access, key=lambda k: self._last_access[k])
             self._history.pop(oldest, None)
             self._last_access.pop(oldest, None)
+            session_dir = self._sessions_dir / oldest
+            if session_dir.exists():
+                import shutil
+                shutil.rmtree(session_dir, ignore_errors=True)
         self._last_access[session_id] = now
-        return self._history.setdefault(session_id, [])
+        if session_id not in self._history:
+            self._history[session_id] = self._load_history(session_id)
+        return self._history[session_id]
 
     async def chat(self, query: str, session_id: str = "") -> str:
         model = self._get_model()
@@ -157,6 +191,7 @@ class Agent:
                 if session_id:
                     history.append({"role": "user", "content": query})
                     history.append({"role": "assistant", "content": answer})
+                    self._save_history(session_id)
                 return answer
 
             # Execute tool and feed result back

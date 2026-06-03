@@ -44,3 +44,18 @@ class TestSessionHistory:
             h.append({"role": "user", "content": f"msg-{i}"})
 
         assert len(agent._history) <= 3
+
+    def test_save_and_load_history(self, agent):
+        h = agent._get_history("sess-persist")
+        h.append({"role": "user", "content": "My name is Alex"})
+        h.append({"role": "assistant", "content": "Got it!"})
+        agent._save_history("sess-persist")
+
+        # Simulate restart — clear in-memory history
+        agent._history.clear()
+        agent._last_access.clear()
+
+        # Load should find disk copy
+        loaded = agent._get_history("sess-persist")
+        assert len(loaded) == 2
+        assert loaded[0]["content"] == "My name is Alex"
